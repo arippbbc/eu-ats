@@ -1,0 +1,78 @@
+2014-02-09 bugs: FIXED
+Still show have positions after being stopped from short orders
+disconnect from server after socket reading erro 509
+Client 0:,1.36230,1.36230,1.36230,1.36230|1.36231|1.36237
+Client 0: There are positions currently!
+Error id=-1, errorCode=509, msg=Exception caught while reading socket - Invalid argument
+Sleeping 1 seconds before next attempt
+Attempt 2 of 5000
+Connecting to 127.0.0.1:4001 clientId:0
+Connected to 127.0.0.1:4001 clientId:0
+
+2014-02-10 FIXED
+duplicate order id bug
+Client 0:,1.36730,1.36730,1.36730,1.36730|1.36724|1.36724
+Client 0: Placing a MKT long order, orderId 196.
+Client 0: New orderId is 197.
+Error id=196, errorCode=103, msg=Duplicate order id
+Error id=197, errorCode=103, msg=Duplicate order id
+Error id=198, errorCode=135, msg=Can't find order with id =196
+
+
+2014-02-11 FIXED
+fixed time function, it's due to '%T' only compatible to c99 and this mingw uses c++11
+TODO: add log for trades and trades statistics
+BUG: parent order-MKT order transmitted but not yet acknowledged???
+
+
+2014-02-23 FIXED
+fixed a USETRAIL bug, can't define this flag both in and out of client class
+TODO: fix this bug - disconnect then reconnect, everything stops
+TODO: reset signal or at least check gap after disconnect and reconnect
+
+
+2014-03-03 FIXED
+ib only provide timestamp with trades, not bid/ask which means forex does not get any timeframe.
+hard to test latency this way. but could test it with es. eg
+there are also limitation on concurrent market depth requests
+Error id=5, errorCode=309, msg=Max number (3) of market depth requests has been reached
+
+
+2014-03-04 STILL HAVE STILL BUG
+new bug
+Disconnected
+Sleeping 1 seconds before next attempt
+Attempt 2 of 5000
+Connecting to 127.0.0.1:4001 clientId:0
+Connected to 127.0.0.1:4001 clientId:0
+Error id=-1, errorCode=2110, msg=Connectivity between Trader Workstation and server is broken. It will be restored automatically.
+Error id=-1, errorCode=2104, msg=Market data farm connection is OK:usfuture
+Error id=-1, errorCode=2104, msg=Market data farm connection is OK:cashfarm
+Error id=-1, errorCode=2106, msg=HMDS data farm connection is OK:ilhmds
+Error id=-1, errorCode=2106, msg=HMDS data farm connection is OK:ushmds
+Error id=-1, errorCode=1100, msg=Connectivity between IB and Trader Workstation has been lost.
+*** Error in `./fx.exe': double free or corruption (!prev): 0x0000000000ec1aa0 ***
+*** Error in `./fx.exe': double free or corruption (!prev): 0x0000000000ec1ce0 ***
+Segmentation fault (core dumped)
+
+
+2014-03-05 MAXIMUM MESSAGE SEEMS TO BE 20 PER SECOND
+can't place order too fast, bug
+Error id=1533, errorCode=201, msg=Order rejected - reason:Your account has a minimum of 15 orders working on either the buy or sell side for this particular contract. <br>An additional order on the same side for this contract will not be allowed until an existing order has been <br>cancelled or has executed. Please call the Trade Desk for further details.
+
+2014-03-09
+Another bug
+rejected -- session not open
+tws is still connected, but api disconnected
+need to understand the behavior of disconnection/reconnection, sometime I could see data is still in update while tws attemps to reconnect
+
+2014-03-13 FIXED
+Fixed one bug that signal should be generated only when cnt reaches number of ticks
+new bug for data feeder:
+Error id=-1, errorCode=2103, msg=Market data farm connection is broken:cashfarm
+Error id=-1, errorCode=2103, msg=Market data farm connection is broken:usfuture
+Error id=-1, errorCode=2104, msg=Market data farm connection is OK:cashfarm
+Error id=-1, errorCode=2104, msg=Market data farm connection is OK:usfuture
+Error id=2, errorCode=317, msg=Market depth data has been RESET. Please empty deep book contents before applying any new entries.
+Error id=1, errorCode=317, msg=Market depth data has been RESET. Please empty deep book contents before applying any new entries.
+Error id=5, errorCode=317, msg=Market depth data has been RESET. Please empty deep book contents before applying any new entries.
