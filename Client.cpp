@@ -22,6 +22,13 @@
 
 using namespace std;
 
+struct OHLC
+{
+	double O, H, L, C;
+	OHLC() { Reset(); }
+	void Reset() { O = 0, C = 0, L = 0, C = 0; }
+};
+
 ofstream log_connect;
 ofstream bidfile, askfile, l2file;
 FILE *audf;
@@ -99,12 +106,6 @@ void initializeContract(){
     aud.secType = "CASH";
     aud.exchange = "IDEALPRO";
     aud.currency = "USD";
-
-
-    aapl.symbol = "AAPL";
-    aapl.secType = "STK";
-    aapl.exchange = "SMART";
-    aapl.currency = "USD";
 
     //Order s_order_parent, s_order_stoploss, s_order_profittaking;
     //Order l_order_parent, l_order_stoploss, l_order_profittaking;
@@ -282,30 +283,75 @@ void Client::barRecord(){
 }
 
 void Client::test(){
-    m_pClient->isConnected();
-    m_pClient->checkMessages();
-    m_pClient->serverVersion();
+    const Contract contract = aud;
+    //m_pClient->isConnected();
+    //m_pClient->checkMessages();
+
+    //int version = m_pClient->serverVersion();
+    //printf("Server version is %d\n", version);
     //m_pClient->setLogLevel(1);
-    m_pClient->TwsConnectionTime();
-    m_pClient->reqCurrentTime();
-    // next valid orderId
+
+    //string TwsConnectionTime = m_pClient->TwsConnectionTime();
+    //printf("TWS connection time is %s\n", TwsConnectionTime.c_str());
+
+    // currentTime() current system time on the server side
+    //m_pClient->reqCurrentTime();
+
+    // next valid orderId, reserver 1000 Ids
     m_pClient->reqIds(1000);
-    m_pClient->reqAccountUpdates(true, "aripp005");
-    //m_pClient->reqAccountSummary(10, "aripp005");
-    m_pClient->reqMarketDataType(2);
-    //m_pClient->reqMktDepth(reqaud, aud, 2, m_taglist);
-    //m_pClient->reqMktData(reqaud, aud, "225", false, m_taglist);
-    m_pClient->reqMktData(reqaud, aapl, "225", false, m_taglist);
+
+    // cancel all open order globally
+    //m_pClient->reqGlobalCancel();
+
+    //m_pClient->reqAccountUpdates(true, "aripp005");
+
     // this client orders
-    m_pClient->reqOpenOrders();
+    //m_pClient->reqOpenOrders();
     // all clients orders
-    m_pClient->reqAllOpenOrders();
+    //m_pClient->reqAllOpenOrders();
     // newly created order
-    m_pClient->reqAutoOpenOrders(true);
-    m_pClient->reqGlobalCancel();
-    m_pClient->reqPositions();
-    m_pClient->cancelPositions();
-    //m_pClient->reqExecutions();
+    //m_pClient->reqAutoOpenOrders(true);
+
+    //m_pClient->reqPositions();
+    //m_pClient->cancelPositions();
+
+    //int reqExecutionsId = 100;
+    //const ExecutionFilter filter;
+    //m_pClient->reqExecutions(reqExecutionsId, filter);
+    
+    //const int reqContractDetailsId = 200;
+    //m_pClient->reqContractDetails(reqContractDetailsId, contract);
+
+    //m_pClient->reqNewsBulletins(true);
+    //m_pClient->cancelNewsBulletins();
+
+    m_pClient->reqMarketDataType(1);
+    int reqMktDataId = 10;
+    //m_pClient->reqMktData(reqMktDataId, contract, "225", false, m_taglist);
+    //m_pClient->cancelMktData(reqMktDataId);
+
+    int reqMktDepthId = 20;
+    int reqMktDepthLevel = 20;
+
+    m_pClient->reqMktDepth(reqMktDepthId, contract, reqMktDepthLevel, m_taglist);
+    //m_pClient->cancelMktDepth(reqMktDepthId);
+
+    int reqRealTimeBarsId = 30;
+    int realTimebarSize = 5;
+    const IBString whatToShow = "TRADES";
+    const int useRTH = 0;
+    const TagValueListSPtr realTimeBarsOptions = m_taglist;
+    //m_pClient->reqRealTimeBars(reqRealTimeBarsId, contract, realTimebarSize, whatToShow, useRTH, realTimeBarsOptions);
+    //m_pClient->cancelRealTimeBars(reqRealTimeBarsId);
+
+    const int reqHistoricalDataId = 40;
+    const IBString endDateTime = "20150315 00:00:00";
+    const IBString barSize = "5 mins";
+    const IBString duration = "1 D";
+    const int formatDate = 1;
+    const TagValueListSPtr chartOption = m_taglist;
+    //m_pClient->reqHistoricalData(reqHistoricalDataId, contract, endDateTime, duration, barSize, whatToShow, useRTH, formatDate, chartOption);
+    //m_pClient->cancelHistoricalData(reqHistoricalDataId);
 }
 
 void Client::tickRecord(){
@@ -320,6 +366,10 @@ void Client::nextValidId(OrderId orderId)
 	m_orderId = orderId;
 }
 
+//string Client::fromLongtoTime(long time){
+//char Time[20];
+//}
+
 void Client::currentTime(long xtime)
 {
     time_t t = time(NULL); 
@@ -333,7 +383,9 @@ void Client::currentTime(long xtime)
 
 void Client::error(const int id, const int errorCode, const IBString errorString)
 {
-    printf("Error id=%d, errorCode=%d, msg=%s\n", id, errorCode, errorString.c_str());
+    if(id==-1 && (errorCode==2104 || errorCode==2106)) return;
+    printf("Error: id=%d, errorCode=%d, msg=%s\n", id, errorCode, errorString.c_str());
+    /*
     if( id == -1 && errorCode == 1100){ //if "Connectivity between IB and TWS has been lost"
         disconnect();
         time_t t;
@@ -354,51 +406,88 @@ void Client::error(const int id, const int errorCode, const IBString errorString
         HAS_POSITION=false;
         //printf("stopped out or profit taken\n");
     }
+    */
 }
 
 void Client::tickPrice(TickerId tickerId, TickType field, double price, int canAutoExecute) {
-    //cout << tickerId << "|" << field << "|" << price << "|" << canAutoExecute << endl;
+    //printf("tickPrice: %d|%d|%f|%d\n", tickerId, field, price, canAutoExecute);
 }
 
 void Client::tickSize( TickerId tickerId, TickType field, int size) {
-    //cout << tickerId << "|" << field << "|" << size << endl;
+    //printf("tickSize: %d|%d|%d\n", tickerId, field, size);
 }
 
 void Client::tickOptionComputation( TickerId tickerId, TickType tickType, double impliedVol, double delta,
 											 double optPrice, double pvDividend,
 											 double gamma, double vega, double theta, double undPrice) {}
+
 void Client::tickGeneric(TickerId tickerId, TickType tickType, double value) {
-    cout << tickerId << "|" << tickType << "|" << value << endl;
+    //printf("tickGeneric: %d|%d|%f\n", tickerId, tickType, value);
 }
+
 void Client::tickString(TickerId tickerId, TickType tickType, const IBString& value) {
-    cout << tickerId << "|" << tickType << "|" << value << endl;
+    //printf("tickGeneric: %d|%d|%s\n", tickerId, tickType, value.c_str());
 }
+
 void Client::tickEFP(TickerId tickerId, TickType tickType, double basisPoints, const IBString& formattedBasisPoints,
 							   double totalDividends, int holdDays, const IBString& futureExpiry, double dividendImpact, double dividendsToExpiry) {}
 void Client::openOrder(OrderId orderId, const Contract &contract, const Order &order, const OrderState& ostate) {
+    //printf("OpenOrder: orderId=%d, contract=%s, order=%s, ostate=%s\n", orderId, contract.info(),
+    //order.info(), ostate.info());
 }
 
-void Client::openOrderEnd() {}
-void Client::winError( const IBString &str, int lastError) {}
+void Client::openOrderEnd() {
+    printf("OpenOrder request ends.\n");
+}
+
+void Client::winError( const IBString &str, int lastError) {
+    printf("WinError: %s|%d\n", str.c_str(), lastError);
+}
+
+// no need
 void Client::connectionClosed() {}
+
 void Client::updateAccountValue(const IBString& key, const IBString& val,
-										  const IBString& currency, const IBString& accountName) {}
+										  const IBString& currency, const IBString& accountName) {
+    printf("updateAccountValue: key=%s, val=%s, currency=%s, accountName=%s\n", key.c_str(), val.c_str(), currency.c_str(), accountName.c_str());
+}
+
 void Client::updatePortfolio(const Contract& contract, int position,
 		double marketPrice, double marketValue, double averageCost,
 		double unrealizedPNL, double realizedPNL, const IBString& accountName){
+    //printf("updatePortfolio: contract=%s, position=%s, marketPrice=%f, marketValue=%f, averageCost=%f, unrealizedPNL=%f, realizedPNL=%f, accountName=%s\n", 
+            //contract.info().c_str(), position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName.c_str());
 }
 
-void Client::updateAccountTime(const IBString& timeStamp) {}
-void Client::accountDownloadEnd(const IBString& accountName) {}
+void Client::updateAccountTime(const IBString& timeStamp) {
+    printf("updateAccountTime: timeStamp=%s\n", timeStamp.c_str());
+}
+
+void Client::accountDownloadEnd(const IBString& accountName) {
+    printf("accountDownloadEnd request ends for %s\n", accountName.c_str());
+}
 
 void Client::contractDetails( int reqId, const ContractDetails& contractDetails) {
+    //printf("contractDetails: reqId=%d, ContractDetails=%s\n", reqId, ContractDetails.info().c_str());
 }
 
+// no need
 void Client::bondContractDetails( int reqId, const ContractDetails& contractDetails) {}
-void Client::contractDetailsEnd( int reqId) {}
-void Client::execDetails( int reqId, const Contract& contract, const Execution& execution) {}
-void Client::execDetailsEnd( int reqId) {}
 
+void Client::contractDetailsEnd( int reqId) {
+    printf("contractDetailsEnd request ends.\n");
+}
+
+void Client::execDetails( int reqId, const Contract& contract, const Execution& execution) {
+    //printf("execDetails: reqId=%d, contract=%s, execution=%s\n", reqId, contract.info().c_str(), execution.info().c_str());
+}
+
+void Client::execDetailsEnd( int reqId) {
+    printf("execDetailsEnd request ends.\n");
+}
+
+// operation 0 = insert, 1 = update, 2 = delete
+// side 0 = ask, 1 = bid
 void Client::updateMktDepth(TickerId id, int position, int operation, int side,
 									  double price, int size) {
     //timeval curTime;
@@ -598,21 +687,33 @@ void Client::updateMktDepthL2(TickerId id, int position, IBString marketMaker, i
 										int side, double price, int size) {
     printf("updateMktDepth2: position %d, marketMaker %s, operation %d, side %d, price %.5f, %d size\n", position, marketMaker.c_str(), operation, side, price, size);
 }
-void Client::updateNewsBulletin(int msgId, int msgType, const IBString& newsMessage, const IBString& originExch) {}
+
+void Client::updateNewsBulletin(int msgId, int msgType, const IBString& newsMessage, const IBString& originExch) {
+    printf("updateNewsBulletin: msgId=%d, msgType=%d, newsMessage=%s, originExch=%s\n", msgId, msgType, newsMessage.c_str(), originExch.c_str());
+}
+
 void Client::managedAccounts( const IBString& accountsList) {}
 void Client::receiveFA(faDataType pFaDataType, const IBString& cxml) {}
 void Client::historicalData(TickerId reqId, const IBString& date, double open, double high,
 									  double low, double close, int volume, int barCount, double WAP, int hasGaps) {
+    printf("historicalData: reqId=%d, %s|%f|%f|%f|%f|%d|%d|%f|%d\n", reqId, date.c_str(), open, high, low, close, volume, barCount, WAP, hasGaps);
 }
+
 void Client::scannerParameters(const IBString &xml) {}
 void Client::scannerData(int reqId, int rank, const ContractDetails &contractDetails,
 	   const IBString &distance, const IBString &benchmark, const IBString &projection,
 	   const IBString &legsStr) {}
 void Client::scannerDataEnd(int reqId) {}
 void Client::realtimeBar(TickerId reqId, long time, double open, double high, double low, double close,
-								   long volume, double wap, int count) {}
+								   long volume, double wap, int count) {
+
+    printf("realtimeBar: reqId=%d, %ld|%f|%f|%f|%f|%ld|%f|%d\n", reqId, time, open, high, low, close, volume, wap, count);
+}
+
 void Client::fundamentalData(TickerId reqId, const IBString& data) {}
 void Client::deltaNeutralValidation(int reqId, const UnderComp& underComp) {}
+
+// no need
 void Client::tickSnapshotEnd(int reqId) {}
 void Client::marketDataType(TickerId reqId, int marketDataType) {}
 
@@ -620,12 +721,30 @@ void Client::initialCheck(){
     m_pClient->reqAllOpenOrders();
 }
 
-void Client::commissionReport( const CommissionReport& commissionReport) {}
-void Client::position( const IBString& account, const Contract& contract, int position, double avgCost) {}
-void Client::positionEnd() {}
-void Client::accountSummary( int reqId, const IBString& account, const IBString& tag, const IBString& value, const IBString& curency) {}
-void Client::accountSummaryEnd( int reqId) {}
-void Client::verifyMessageAPI( const IBString& apiData) {}
+void Client::commissionReport( const CommissionReport& commissionReport) {
+    //printf("commissionReport: commissionReport=%s\n", commissionReport);
+}
+
+void Client::position( const IBString& account, const Contract& contract, int position, double avgCost) {
+    //printf("positon: account=%s, contract=%s, position=%d, avgCost=%f\n", account.c_str(), contract.info().c_str(), position, avgCost);
+}
+
+void Client::positionEnd() {
+    printf("positionEnd requst ends.\n");
+}
+
+void Client::accountSummary( int reqId, const IBString& account, const IBString& tag, const IBString& value, const IBString& curency) {
+    printf("accountSummary: reqId=%d, account=%s, tag=%s, value=%s, curency=%s\n", reqId, account.c_str(), tag.c_str(), value.c_str(), curency.c_str());
+}
+
+void Client::accountSummaryEnd( int reqId) {
+    printf("Account summary ends for %d.\n", reqId);
+}
+
+void Client::verifyMessageAPI( const IBString& apiData) {
+    printf("verifyMessageAPI: apiData=%s\n", apiData.c_str());
+}
+
 void Client::verifyCompleted( bool isSuccessful, const IBString& errorText) {}
 void Client::displayGroupList( int reqId, const IBString& groups) {}
 void Client::displayGroupUpdated( int reqId, const IBString& contractInfo) {}
