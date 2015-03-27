@@ -3,6 +3,7 @@
 #include "EPosixClientSocketPlatform.h"
 
 #include "Contract.h"
+#include "Contracts.h"
 #include "Order.h"
 #include "OrderState.h"
 #include <vector>
@@ -18,16 +19,10 @@
 #include <string>
 #include <time.h>
 #include <sys/time.h>
-#include <windows.h>
+#include <memory>
+//#include <windows.h>
 
 using namespace std;
-
-struct OHLC
-{
-	double O, H, L, C;
-	OHLC() { Reset(); }
-	void Reset() { O = 0, C = 0, L = 0, C = 0; }
-};
 
 ofstream log_connect;
 ofstream bidfile, askfile, l2file;
@@ -68,15 +63,29 @@ double avgPrice = 0.0;
 
 string clientIdStr = "";
         
-Contract aud;
-Contract es;
-Contract aapl;
+//Contract aud;
+//Contract es;
+//Contract aapl;
 int reqaud=1;
 
 const int fast=28, slow=80;        
 //const int fast=3, slow=8;        
 Order s_order_parent, s_order_stoploss, s_order_profittaking, s_order_trailing;
 Order l_order_parent, l_order_stoploss, l_order_profittaking, l_order_trailing;
+
+inline string getCurrentTime(){
+    timeval curTime;
+    gettimeofday(&curTime, NULL);
+    unsigned long micro = curTime.tv_usec;
+
+    char buffer [20];
+    //localtime is not thread safe
+    strftime(buffer, 20, "%Y-%m-%d %H:%M:%S", localtime((const time_t*)&curTime.tv_sec));
+
+    char currentTime2[30];
+    sprintf(currentTime2, "%s.%06Lu", buffer, micro); 
+    return string(currentTime2);
+}
 
 double halfpip(double price){
     int lastdigit = int(price*100000)%10;
@@ -100,18 +109,6 @@ double halfpip(double price){
     }
 }
 
-/* 2014-02-23 global contract definition */
-void initializeContract(){
-    aud.symbol = "AUD";
-    aud.secType = "CASH";
-    aud.exchange = "IDEALPRO";
-    aud.currency = "USD";
-
-    //Order s_order_parent, s_order_stoploss, s_order_profittaking;
-    //Order l_order_parent, l_order_stoploss, l_order_profittaking;
-}
-
-///////////////////////////////////////////////////////////
 // member funcs
 Client::Client(int clientId)
     //Client::Client()
@@ -119,13 +116,14 @@ Client::Client(int clientId)
       //, m_clientId(clientId)
 	, m_state(ST_CONNECT)
     //better to set up initial value to be false
-    , m_noposition(false)
-    , m_modified(false)
+    //, m_noposition(false)
+    //, m_modified(false)
 	, m_sleepDeadline(0)
-    , m_contract(Contract())
+    //, m_contract(Contract())
 	, m_orderId(0)
     , m_clientId(clientId)
     , m_taglist(new vector<TagValueSPtr>())
+    , m_data(new HistoricalData())
 {
 }
 
@@ -147,8 +145,6 @@ bool Client::connect(const char *host, unsigned int port)
 		printf( "Cannot connect to %s:%d clientId:%d\n", !( host && *host) ? "127.0.0.1" : host, port, m_clientId);
 
     //2014-02-09 start to read portfolio and account summary here?
-    initializeContract();
-    m_contract = aud;
 	return bRes;
 }
 
@@ -283,7 +279,7 @@ void Client::barRecord(){
 }
 
 void Client::test(){
-    const Contract contract = aud;
+    const Contract contract = Forex::Major::AUDUSD();
     //m_pClient->isConnected();
     //m_pClient->checkMessages();
 
@@ -333,24 +329,28 @@ void Client::test(){
     int reqMktDepthId = 20;
     int reqMktDepthLevel = 20;
 
-    m_pClient->reqMktDepth(reqMktDepthId, contract, reqMktDepthLevel, m_taglist);
+    //m_pClient->reqMktDepth(reqMktDepthId, contract, reqMktDepthLevel, m_taglist);
     //m_pClient->cancelMktDepth(reqMktDepthId);
 
     int reqRealTimeBarsId = 30;
     int realTimebarSize = 5;
-    const IBString whatToShow = "TRADES";
-    const int useRTH = 0;
+    const IBString whatToShow = "ASK";
+    const int useRTH = 1;
     const TagValueListSPtr realTimeBarsOptions = m_taglist;
     //m_pClient->reqRealTimeBars(reqRealTimeBarsId, contract, realTimebarSize, whatToShow, useRTH, realTimeBarsOptions);
     //m_pClient->cancelRealTimeBars(reqRealTimeBarsId);
 
     const int reqHistoricalDataId = 40;
-    const IBString endDateTime = "20150315 00:00:00";
+
+
+    IBString endDateTime = getCurrentTime();
+    endDateTime = endDateTime.substr(0, 4) + endDateTime.substr(5,2) + endDateTime.substr(8,11);
+    cout << endDateTime << endl;
     const IBString barSize = "5 mins";
-    const IBString duration = "1 D";
+    const IBString duration = "3600 S";
     const int formatDate = 1;
     const TagValueListSPtr chartOption = m_taglist;
-    //m_pClient->reqHistoricalData(reqHistoricalDataId, contract, endDateTime, duration, barSize, whatToShow, useRTH, formatDate, chartOption);
+    m_pClient->reqHistoricalData(reqHistoricalDataId, contract, endDateTime, duration, barSize, whatToShow, useRTH, formatDate, chartOption);
     //m_pClient->cancelHistoricalData(reqHistoricalDataId);
 }
 
@@ -487,20 +487,17 @@ void Client::execDetailsEnd( int reqId) {
 }
 
 // operation 0 = insert, 1 = update, 2 = delete
+// for bid/ask it's always update
 // side 0 = ask, 1 = bid
 void Client::updateMktDepth(TickerId id, int position, int operation, int side,
 									  double price, int size) {
-    //timeval curTime;
-    //gettimeofday(&curTime, NULL);
-    //unsigned long micro = curTime.tv_usec;
+   
 
-    //char buffer [30];
-    //localtime is not thread safe
-    //strftime(buffer, 80, "%Y-%m-%d %H:%M:%S", localtime((const time_t*)&curTime.tv_sec));
-
-    //char currentTime2[30] = "";
-    //sprintf(currentTime2, "%s.%06Lu", buffer, micro); 
-    printf("updateMktDepth: position %d, operation %d, side %d, price %.5f, %d size\n", position, operation, side, price, size);
+    char currentTime2[30] = "";
+    //printf("updateMktDepth: position %d, operation %d, side %d, price %.5f, %d size\n", position, operation, side, price, size);
+    if(position==0 && side==0)
+    printf("%s|%.5f|%d\n", getCurrentTime().c_str(), price, size);
+    //printf("%s|%.5f|%d|%d|%d|%d\n", currentTime2, price, size, position, operation, side);
 
     /*
     if(!side){
@@ -696,7 +693,9 @@ void Client::managedAccounts( const IBString& accountsList) {}
 void Client::receiveFA(faDataType pFaDataType, const IBString& cxml) {}
 void Client::historicalData(TickerId reqId, const IBString& date, double open, double high,
 									  double low, double close, int volume, int barCount, double WAP, int hasGaps) {
-    printf("historicalData: reqId=%d, %s|%f|%f|%f|%f|%d|%d|%f|%d\n", reqId, date.c_str(), open, high, low, close, volume, barCount, WAP, hasGaps);
+    if(date.find("finished")==string::npos)
+        m_data->update(date, open, high, low, close, volume);
+    //printf("historicalData: reqId=%d, %s|%f|%f|%f|%f|%d|%d|%f|%d\n", reqId, date.c_str(), open, high, low, close, volume, barCount, WAP, hasGaps);
 }
 
 void Client::scannerParameters(const IBString &xml) {}

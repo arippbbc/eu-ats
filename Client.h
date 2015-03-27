@@ -2,12 +2,13 @@
 #define client_h__INCLUDED
 
 #include "EWrapper.h"
-#include <windows.h>
+//#include <windows.h>*/
 #include "Contract.h"
 #include <memory>
 #include <vector>
+#include "Data.h"
 
-using std::vector;
+using namespace std;
 
 extern int NUM_OF_TICKS;
 extern double trail;
@@ -130,15 +131,16 @@ void tickPrice(TickerId tickerId, TickType field, double price, int canAutoExecu
 
 private:
 
-	std::auto_ptr<EPosixClientSocket> m_pClient;
+	shared_ptr<EPosixClientSocket> m_pClient;
+	shared_ptr<Data> m_data;
     int m_clientId;
 	State m_state;
     // this is the flag for the adjustment of stoploss and profit taking order after parent order
     // gets filled
-    bool m_noposition;
-    bool m_modified;
-	time_t m_sleepDeadline;
-    Contract m_contract;
+    //bool m_noposition;
+    //bool m_modified;
+    time_t m_sleepDeadline;
+    //Contract m_contract;
 	OrderId m_orderId;
     const TagValueListSPtr m_taglist;
 };
