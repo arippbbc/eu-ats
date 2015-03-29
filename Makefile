@@ -1,7 +1,7 @@
 UNAME:=$(shell uname)
 
 CXX=g++
-CXXFLAGS=-DIB_USE_STD_STRING -w -Wno-switch -Wno-sign-compare -O2
+CXXFLAGS=-DIB_USE_STD_STRING -w -Wno-switch -Wno-sign-compare -Wfatal-errors -O2 -std=c++11
 BASE_SRC_DIR=${ROOT_DIR}/PosixClient/src
 ifeq ($(UNAME), Linux)
 ROOT_DIR = ${HOME}/tws/IBJts/source
@@ -17,11 +17,11 @@ LFLAGS=-lws2_32
 endif
 CXXFLAGS:=$(CXXFLAGS) $(INCLUDES)
 
-SOURCES=Client.cpp Data.cpp Contracts.cpp Main.cpp
+SOURCES=Client.cpp Data.cpp Instrument.cpp Main.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 LIB=lib/EClientSocketBase.o lib/EPosixClientSocket.o
 
-EXECUTABLE=fx.exe
+EXECUTABLE=fx
 
 all: $(SOURCES) $(EXECUTABLE)
 

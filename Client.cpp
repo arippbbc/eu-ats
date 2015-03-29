@@ -3,7 +3,6 @@
 #include "EPosixClientSocketPlatform.h"
 
 #include "Contract.h"
-#include "Contracts.h"
 #include "Order.h"
 #include "OrderState.h"
 #include <vector>
@@ -123,7 +122,7 @@ Client::Client(int clientId)
 	, m_orderId(0)
     , m_clientId(clientId)
     , m_taglist(new vector<TagValueSPtr>())
-    , m_data(new HistoricalData())
+    //, m_data(new HistoricalData())
 {
 }
 
@@ -251,6 +250,28 @@ void Client::reqCurrentTime()
 	m_pClient->reqCurrentTime();
 }
 
+void Client::subscribeInstrument(const Instrument& inst){
+    auto it=find(subscribedInst.begin(), subscribedInst.end(), inst);
+    if(it!=subscribedInst.end()){
+        subscribedInst.push_back(inst);
+    }
+    else{
+        printf("Warning: ignoring an attempt to subscribe already subscribed instrument!\n");
+    }
+}
+
+void Client::unsubscribeInstrument(const Instrument& inst){
+    auto it=find(subscribedInst.begin(), subscribedInst.end(), inst);
+    if(it!=subscribedInst.end()){
+        subscribedInst.erase(it);
+    }
+    else{
+        printf("Warning: ignoring an attempt to unsubscribe non-existing instrument!\n");
+    }
+}
+
+
+/*  
 void Client::placeOrder()
 {
     return;
@@ -265,6 +286,7 @@ void Client::cancelOrder()
 	m_pClient->cancelOrder(m_orderId);
     printf("Client %d: cancel order function called!", m_clientId);
 }
+*/
 
 // possible duplicate messages
 void Client::orderStatus(OrderId orderId, const IBString &status, int filled,
@@ -278,6 +300,7 @@ void Client::orderStatus(OrderId orderId, const IBString &status, int filled,
 void Client::barRecord(){
 }
 
+/*
 void Client::test(){
     const Contract contract = Forex::Major::AUDUSD();
     //m_pClient->isConnected();
@@ -323,11 +346,11 @@ void Client::test(){
 
     m_pClient->reqMarketDataType(1);
     int reqMktDataId = 10;
-    //m_pClient->reqMktData(reqMktDataId, contract, "225", false, m_taglist);
+    m_pClient->reqMktData(reqMktDataId, contract, "225", false, m_taglist);
     //m_pClient->cancelMktData(reqMktDataId);
 
     int reqMktDepthId = 20;
-    int reqMktDepthLevel = 20;
+    int reqMktDepthLevel = 2;
 
     //m_pClient->reqMktDepth(reqMktDepthId, contract, reqMktDepthLevel, m_taglist);
     //m_pClient->cancelMktDepth(reqMktDepthId);
@@ -342,7 +365,6 @@ void Client::test(){
 
     const int reqHistoricalDataId = 40;
 
-
     IBString endDateTime = getCurrentTime();
     endDateTime = endDateTime.substr(0, 4) + endDateTime.substr(5,2) + endDateTime.substr(8,11);
     cout << endDateTime << endl;
@@ -353,6 +375,7 @@ void Client::test(){
     m_pClient->reqHistoricalData(reqHistoricalDataId, contract, endDateTime, duration, barSize, whatToShow, useRTH, formatDate, chartOption);
     //m_pClient->cancelHistoricalData(reqHistoricalDataId);
 }
+*/
 
 void Client::tickRecord(){
     //m_pClient->reqMktDepth(reqaud, aud, 2, m_taglist);
@@ -410,7 +433,7 @@ void Client::error(const int id, const int errorCode, const IBString errorString
 }
 
 void Client::tickPrice(TickerId tickerId, TickType field, double price, int canAutoExecute) {
-    //printf("tickPrice: %d|%d|%f|%d\n", tickerId, field, price, canAutoExecute);
+    printf("tickPrice: %d|%d|%f|%d\n", tickerId, field, price, canAutoExecute);
 }
 
 void Client::tickSize( TickerId tickerId, TickType field, int size) {
@@ -693,8 +716,8 @@ void Client::managedAccounts( const IBString& accountsList) {}
 void Client::receiveFA(faDataType pFaDataType, const IBString& cxml) {}
 void Client::historicalData(TickerId reqId, const IBString& date, double open, double high,
 									  double low, double close, int volume, int barCount, double WAP, int hasGaps) {
-    if(date.find("finished")==string::npos)
-        m_data->update(date, open, high, low, close, volume);
+    //if(date.find("finished")==string::npos)
+    //m_data->update(date, open, high, low, close, volume);
     //printf("historicalData: reqId=%d, %s|%f|%f|%f|%f|%d|%d|%f|%d\n", reqId, date.c_str(), open, high, low, close, volume, barCount, WAP, hasGaps);
 }
 

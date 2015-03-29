@@ -2,6 +2,7 @@
 #define contracts_h__INCLUDED 
 #include "Contract.h"
 #include "IBString.h"
+#include <memory>
 
 /* 
 struct Forex: public struct Contract{
@@ -9,11 +10,18 @@ struct Forex: public struct Contract{
 }
 */
 
+typedef std::shared_ptr<Contract> Instrument;
+
 inline void init(Contract &c, const IBString &a, const IBString &b){
     c.symbol = a;
     c.secType = "CASH";
     c.currency = b;
     c.exchange = "IDEALPRO";
+}
+
+
+class Forex: public Contract{
+    Forex
 }
 //#define FX(A,B) extern const Contract A##B;
 namespace Forex{

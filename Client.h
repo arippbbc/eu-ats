@@ -4,11 +4,12 @@
 #include "EWrapper.h"
 //#include <windows.h>*/
 #include "Contract.h"
+#include "Instrument.h"
 #include <memory>
 #include <vector>
 #include "Data.h"
 
-using namespace std;
+//using namespace std;
 
 extern int NUM_OF_TICKS;
 extern double trail;
@@ -59,9 +60,12 @@ public:
 private:
 
 	void reqCurrentTime();
+    void subscribeInstrument(const Instrument &inst);
+    void unsubscribeInstrument(const Instrument &inst);
+
 	//void placeOrder(const IBString &action);
-	void placeOrder();
-	void cancelOrder();
+	//void placeOrder();
+	//void cancelOrder();
 
 public:
 	// events
@@ -130,9 +134,8 @@ void tickPrice(TickerId tickerId, TickType field, double price, int canAutoExecu
     void initialCheck();
 
 private:
-
-	shared_ptr<EPosixClientSocket> m_pClient;
-	shared_ptr<Data> m_data;
+    std::shared_ptr<EPosixClientSocket> m_pClient;
+    std::vector<Instrument> subscribedInst;
     int m_clientId;
 	State m_state;
     // this is the flag for the adjustment of stoploss and profit taking order after parent order
