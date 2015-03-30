@@ -84,24 +84,23 @@ int main(int argc, char** argv)
         printf("Attempt %u of %u\n", attempt, MAX_ATTEMPTS);
 
         shared_ptr<Client> client(new Client(clientId)); 
+        client->subscribeInstrument(makeForex("AUDUSD")); 
         client->connect(host, port);
 
+        DataCenter dataCenter(client);
         // 2014-02-23 wait until cash farm data feed is ready
         //while(!client.iscfReady()){}
-        while(!client->isConnected()){}
+        //while(!client->isConnected()){}
         //this_thread::sleep_for(chrono::seconds(1));
         // 2014-02-26 Tested, this is in seconds
         //sleep(30);
-        sleep(1);
 
-        client->test();
+        while(client->isConnected()){
+            sleep(1);
+        }
 
         // 2014-02-09 how to use checkMessage() every second? 
         // in another thread?
-        //while(client.isConnected()) {
-        //client.processMessages();
-        //}
-
         if(attempt >= MAX_ATTEMPTS) {
             break;
         }

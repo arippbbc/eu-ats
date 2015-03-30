@@ -7,8 +7,11 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include "Client.h"
 
 using namespace std;
+
+class Client;
 
 struct OHLC
 {
@@ -26,7 +29,7 @@ class Data{
         virtual void update(const IBString& date, double open, double high, double low, double close, int volume)=0;
         virtual ~Data(){};
     private:
-        shared_ptr<Client> d_client;
+        //shared_ptr<Client> d_client;
 };
 
 //typedef shared_ptr<Contract, Data> DataCenter;
@@ -50,7 +53,7 @@ class DataCenter{
         shared_ptr<Client> d_client;
     public:
         DataCenter(shared_ptr<Client>);
-        ~DataCenter();
+        //~DataCenter(){};
 };
 
 #endif

@@ -2,9 +2,21 @@
 #include <deque>
 #include <cstdio>
 #include <iostream>
+#include "Enumerations.h"
+#include "Client.h"
+#include <chrono>
+#include <ctime>
 
-using std::cout;
-using std::endl;
+using namespace std;
+
+inline string getCurrentTime(){
+    auto cur = std::chrono::system_clock::now();
+    auto curTime = std::chrono::system_clock::to_time_t(cur);
+    char buffer [20];
+    //localtime is not thread safe
+    strftime(buffer, 20, "%Y-%m-%d %H:%M:%S", localtime(&curTime));
+    return string(buffer);
+}
 
 //OHLC::OHLC(const IBString& _date, double _open, double _high, double _low, double _close, int _volume):date(_date), open(_open), high(_high), low(_low), close(_close), volume(_volume){}
 
@@ -17,5 +29,16 @@ void HistoricalData::update(const IBString& date, double open, double high, doub
 }
 
 DataCenter::DataCenter(shared_ptr<Client> _client):d_client(_client){
-    cout << d_client->subscribedInst.size() << endl;
+    //cout << d_client->getsubscribedInst().size() << endl;
+    auto Instruments = d_client->getsubscribedInst();
+    for(auto in = Instruments.begin(), end = Instruments.end(); in!=end; ++ in){
+        auto c = in->getContract();
+        auto endDateTime = getCurrentTime();
+        auto barSize = barSizes[M5];
+        auto duration = "1 D";
+        const int formatDate = 1;
+    //const TagValueListSPtr chartOption = m_taglist;
+    //m_pClient->reqHistoricalData(reqHistoricalDataId, contract, endDateTime, duration, barSize, whatToShow, useRTH, formatDate, chartOption);
+    }
+    
 }

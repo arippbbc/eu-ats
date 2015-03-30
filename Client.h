@@ -7,9 +7,9 @@
 #include "Instrument.h"
 #include <memory>
 #include <vector>
-#include "Data.h"
 
 //using namespace std;
+class Instrument;
 
 extern int NUM_OF_TICKS;
 extern double trail;
@@ -56,12 +56,11 @@ public:
 	bool connect(const char * host, unsigned int port);
 	void disconnect() const;
 	bool isConnected() const;
-
-private:
-
-	void reqCurrentTime();
     void subscribeInstrument(const Instrument &inst);
     void unsubscribeInstrument(const Instrument &inst);
+
+private:
+	void reqCurrentTime();
 
 	//void placeOrder(const IBString &action);
 	//void placeOrder();
@@ -132,6 +131,7 @@ void tickPrice(TickerId tickerId, TickType field, double price, int canAutoExecu
     void test();
     void demo();
     void initialCheck();
+    inline std::vector<Instrument> getsubscribedInst() {return subscribedInst;}
 
 private:
     std::shared_ptr<EPosixClientSocket> m_pClient;

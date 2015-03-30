@@ -24,6 +24,7 @@ inline bool operator!=(const Contract &lhs, const Contract &rhs){
 class Instrument{
     public:
         Instrument(const Contract &_c):c(_c){};
+        Contract getContract() { return c;}
         bool inline operator==(const Instrument &inst) const { return (*this).c==inst.c; }
         bool inline operator!=(const Instrument &inst) const { return !((*this).c==inst.c); }
     private:
