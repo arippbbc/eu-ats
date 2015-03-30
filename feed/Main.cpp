@@ -6,22 +6,17 @@
 #include <unistd.h>
 #endif
 
-#include "Client.h"
+#include "PosixTestClient.h"
 #include "Contract.h"
-//#include <cstdio>
-#include <stdio.h>
-//#include <csignal>
-#include <signal.h>
-//#include <cstdlib>
-#include <stdlib.h>
+#include <cstdio>
+#include <csignal>
+#include <cstdlib>
 //#include <pthread.h>
 #include <iostream>
 //#include "Timer.h"
-//#include <ctime>
-#include <time.h>
+#include <ctime>
 //#include <thread>         // std::this_thread::sleep_for
 //#include <chrono>         // std::chrono::seconds
-#include <memory>
 
 //#define NUM_OF_THREADS 2
 using namespace std;
@@ -31,9 +26,11 @@ const unsigned SLEEP_TIME = 1;
 
 //bool TICKBAR = false;
 bool TICKBAR = true;
+static bool keeprunning=true;
 
 void signal_callback_handler(int signum){
     printf("Caught signal %d\n",signum);
+    keeprunning=false;
     exit(signum);
 }
 
@@ -42,9 +39,9 @@ int main(int argc, char** argv)
     signal(SIGINT, signal_callback_handler);
     //timestamp();
    
-    //const char* host = "72.69.43.58";
-    const char* host = "127.0.0.1";
-    unsigned int port = 7496;
+    const char* host = "";
+    //unsigned int port = 7496;
+    unsigned int port = 4001;
     bool tflag = false;
     int c;
     int clientId = 0;
@@ -78,29 +75,32 @@ int main(int argc, char** argv)
     }
     
     unsigned int attempt = 0;
-    printf("Start of AUD.USD automatic trading Test %d on client %d\n", attempt, clientId);
-    for (;;) {
+    printf("Start to collect market depth data on AU, EU, UJ pairs on %d attempts\n", attempt);
+    while(keeprunning) {
         ++attempt;
         printf("Attempt %u of %u\n", attempt, MAX_ATTEMPTS);
 
-        shared_ptr<Client> client(new Client(clientId)); 
-        client->connect(host, port);
+        PosixTestClient client(tflag);
+        client.connect(host, port, clientId);
 
         // 2014-02-23 wait until cash farm data feed is ready
         //while(!client.iscfReady()){}
-        while(!client->isConnected()){}
+        while(!client.isConnected()){}
         //this_thread::sleep_for(chrono::seconds(1));
         // 2014-02-26 Tested, this is in seconds
         //sleep(30);
-        sleep(1);
+        sleep(10);
 
-        client->test();
+        if(TICKBAR){
+            client.tickRecord();
+        }
+        else {
+            client.barRecord();
+        }
 
-        // 2014-02-09 how to use checkMessage() every second? 
-        // in another thread?
-        //while(client.isConnected()) {
-        //client.processMessages();
-        //}
+        while(client.isConnected()) {
+            client.processMessages();
+        }
 
         if(attempt >= MAX_ATTEMPTS) {
             break;

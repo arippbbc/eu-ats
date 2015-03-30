@@ -3,6 +3,10 @@
 
 #include "IBString.h"
 #include <deque>
+#include "Enumerations.h"
+#include <memory>
+#include <unordered_map>
+#include <vector>
 
 using namespace std;
 
@@ -21,7 +25,11 @@ class Data{
         //virtual void update();
         virtual void update(const IBString& date, double open, double high, double low, double close, int volume)=0;
         virtual ~Data(){};
+    private:
+        shared_ptr<Client> d_client;
 };
+
+//typedef shared_ptr<Contract, Data> DataCenter;
 
 class HistoricalData: public Data{
     public:
@@ -32,6 +40,17 @@ class HistoricalData: public Data{
         deque<OHLC> hisData;
         //hard coded window for now
         static const unsigned len = 500;
+};
+
+class DataCenter{
+    private:
+        typedef shared_ptr<Data> dataPtr;
+        typedef unordered_map<IBString, unordered_map<IBString, dataPtr> >  HdataMap;
+        vector<HdataMap> DCenter;
+        shared_ptr<Client> d_client;
+    public:
+        DataCenter(shared_ptr<Client>);
+        ~DataCenter();
 };
 
 #endif

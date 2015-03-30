@@ -252,7 +252,7 @@ void Client::reqCurrentTime()
 
 void Client::subscribeInstrument(const Instrument& inst){
     auto it=find(subscribedInst.begin(), subscribedInst.end(), inst);
-    if(it!=subscribedInst.end()){
+    if(it==subscribedInst.end()){
         subscribedInst.push_back(inst);
     }
     else{
@@ -297,12 +297,14 @@ void Client::orderStatus(OrderId orderId, const IBString &status, int filled,
     printf("Order: id=%ld, parentId=%d, status=%s, filled price=%.5f, average filled price=%.5f\n", orderId, parentId, status.c_str(), lastFillPrice, avgFillPrice);
 }
 
-void Client::barRecord(){
+void Client::test(){
+    cout << subscribedInst.size() << " instruments subscribed!" << endl;
+    Instrument AU(makeForex("AUDUSD"));
+    this->subscribeInstrument(AU);
 }
 
-/*
-void Client::test(){
-    const Contract contract = Forex::Major::AUDUSD();
+void Client::demo(){
+    const Contract contract = makeForex("AUDUSD");
     //m_pClient->isConnected();
     //m_pClient->checkMessages();
 
@@ -344,44 +346,38 @@ void Client::test(){
     //m_pClient->reqNewsBulletins(true);
     //m_pClient->cancelNewsBulletins();
 
-    m_pClient->reqMarketDataType(1);
-    int reqMktDataId = 10;
-    m_pClient->reqMktData(reqMktDataId, contract, "225", false, m_taglist);
+    //m_pClient->reqMarketDataType(1);
+    //int reqMktDataId = 10;
+    //m_pClient->reqMktData(reqMktDataId, contract, "225", false, m_taglist);
     //m_pClient->cancelMktData(reqMktDataId);
 
     int reqMktDepthId = 20;
-    int reqMktDepthLevel = 2;
+    int reqMktDepthLevel = 20;
 
-    //m_pClient->reqMktDepth(reqMktDepthId, contract, reqMktDepthLevel, m_taglist);
+    m_pClient->reqMktDepth(reqMktDepthId, contract, reqMktDepthLevel, m_taglist);
     //m_pClient->cancelMktDepth(reqMktDepthId);
 
-    int reqRealTimeBarsId = 30;
-    int realTimebarSize = 5;
-    const IBString whatToShow = "ASK";
-    const int useRTH = 1;
-    const TagValueListSPtr realTimeBarsOptions = m_taglist;
+    //int reqRealTimeBarsId = 30;
+    //int realTimebarSize = 5;
+    //const IBString whatToShow = "ASK";
+    //const int useRTH = 1;
+    //const TagValueListSPtr realTimeBarsOptions = m_taglist;
     //m_pClient->reqRealTimeBars(reqRealTimeBarsId, contract, realTimebarSize, whatToShow, useRTH, realTimeBarsOptions);
     //m_pClient->cancelRealTimeBars(reqRealTimeBarsId);
 
-    const int reqHistoricalDataId = 40;
+    //const int reqHistoricalDataId = 40;
 
-    IBString endDateTime = getCurrentTime();
-    endDateTime = endDateTime.substr(0, 4) + endDateTime.substr(5,2) + endDateTime.substr(8,11);
-    cout << endDateTime << endl;
-    const IBString barSize = "5 mins";
-    const IBString duration = "3600 S";
-    const int formatDate = 1;
-    const TagValueListSPtr chartOption = m_taglist;
-    m_pClient->reqHistoricalData(reqHistoricalDataId, contract, endDateTime, duration, barSize, whatToShow, useRTH, formatDate, chartOption);
+    //IBString endDateTime = getCurrentTime();
+    //endDateTime = endDateTime.substr(0, 4) + endDateTime.substr(5,2) + endDateTime.substr(8,11);
+    //cout << endDateTime << endl;
+    //const IBString barSize = "5 mins";
+    //const IBString duration = "3600 S";
+    //const int formatDate = 1;
+    //const TagValueListSPtr chartOption = m_taglist;
+    //m_pClient->reqHistoricalData(reqHistoricalDataId, contract, endDateTime, duration, barSize, whatToShow, useRTH, formatDate, chartOption);
     //m_pClient->cancelHistoricalData(reqHistoricalDataId);
 }
-*/
 
-void Client::tickRecord(){
-    //m_pClient->reqMktDepth(reqaud, aud, 2, m_taglist);
-    //m_pClient->reqMktData(reqaud, aud, "225", false, m_taglist);
-}
- 
 // this is called automatically on connection, should mannually maintain valid orderId
 void Client::nextValidId(OrderId orderId)
 {
@@ -516,10 +512,11 @@ void Client::updateMktDepth(TickerId id, int position, int operation, int side,
 									  double price, int size) {
    
 
-    char currentTime2[30] = "";
-    //printf("updateMktDepth: position %d, operation %d, side %d, price %.5f, %d size\n", position, operation, side, price, size);
-    if(position==0 && side==0)
-    printf("%s|%.5f|%d\n", getCurrentTime().c_str(), price, size);
+    //char currentTime2[30] = "";
+    printf("updateMktDepth: position %d, operation %d, side %d, price %.5f, %d size\n", position, operation, side, price, size);
+    //if(position==0 && side==0)
+    //printf("%.5f|%d\n", price, size);
+    //printf("%s|%.5f|%d\n", getCurrentTime().c_str(), price, size);
     //printf("%s|%.5f|%d|%d|%d|%d\n", currentTime2, price, size, position, operation, side);
 
     /*

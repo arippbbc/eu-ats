@@ -1,15 +1,10 @@
-#ifndef client_h__INCLUDED
-#define client_h__INCLUDED
+#ifndef posixtestclient_h__INCLUDED
+#define posixtestclient_h__INCLUDED
 
 #include "EWrapper.h"
-//#include <windows.h>*/
-#include "Contract.h"
-#include "Instrument.h"
-#include <memory>
-#include <vector>
-#include "Data.h"
 
-//using namespace std;
+#include "Contract.h"
+#include <memory>
 
 extern int NUM_OF_TICKS;
 extern double trail;
@@ -33,43 +28,32 @@ enum State {
 	ST_IDLE
 };
 
-enum Sig{
-    _SHORT=-1,
-    _NEUTRAL=0,
-    _LONG=1
-};
-
-
-class Client : public EWrapper
+class PosixTestClient : public EWrapper
 {
 public:
 
-    //Client(bool tflag=false);
-    Client(int clientId = 0);
-	Client();
-	~Client();
+    PosixTestClient(bool tflag=false);
+	PosixTestClient();
+	~PosixTestClient();
 
 	void processMessages();
 
 public:
 
-	bool connect(const char * host, unsigned int port);
+	bool connect(const char * host, unsigned int port, int clientId = 0);
 	void disconnect() const;
 	bool isConnected() const;
 
 private:
 
 	void reqCurrentTime();
-    void subscribeInstrument(const Instrument &inst);
-    void unsubscribeInstrument(const Instrument &inst);
-
 	//void placeOrder(const IBString &action);
-	//void placeOrder();
-	//void cancelOrder();
+	void placeOrder();
+	void cancelOrder();
 
 public:
 	// events
-void tickPrice(TickerId tickerId, TickType field, double price, int canAutoExecute);
+	void tickPrice(TickerId tickerId, TickType field, double price, int canAutoExecute);
 	void tickSize(TickerId tickerId, TickType field, int size);
 	void tickOptionComputation( TickerId tickerId, TickType tickType, double impliedVol, double delta,
 		double optPrice, double pvDividend, double gamma, double vega, double theta, double undPrice);
@@ -119,35 +103,39 @@ void tickPrice(TickerId tickerId, TickType field, double price, int canAutoExecu
 	void deltaNeutralValidation(int reqId, const UnderComp& underComp);
 	void tickSnapshotEnd(int reqId);
 	void marketDataType(TickerId reqId, int marketDataType);
-	void commissionReport( const CommissionReport& commissionReport);
-	void position( const IBString& account, const Contract& contract, int position, double avgCost);
+    void tickRecord();
+    void barRecord();
+    void initialCheck();
+
+    void commissionReport( const CommissionReport& commissionReport);
+	void position( const IBString& account, const Contract& contract, int position);
 	void positionEnd();
 	void accountSummary( int reqId, const IBString& account, const IBString& tag, const IBString& value, const IBString& curency);
 	void accountSummaryEnd( int reqId);
-	void verifyMessageAPI( const IBString& apiData);
-	void verifyCompleted( bool isSuccessful, const IBString& errorText);
-	void displayGroupList( int reqId, const IBString& groups);
-	void displayGroupUpdated( int reqId, const IBString& contractInfo);
-
-    void test();
-    void demo();
-    void initialCheck();
+    
 
 private:
-    std::shared_ptr<EPosixClientSocket> m_pClient;
-    std::vector<Instrument> subscribedInst;
-    //DataCenter dCenter;
+
+	std::auto_ptr<EPosixClientSocket> m_pClient;
     int m_clientId;
 	State m_state;
     // this is the flag for the adjustment of stoploss and profit taking order after parent order
     // gets filled
-    //bool m_noposition;
-    //bool m_modified;
-    time_t m_sleepDeadline;
-    //Contract m_contract;
+    bool m_noposition;
+    bool m_modified;
+	time_t m_sleepDeadline;
+    Contract m_contract;
 	OrderId m_orderId;
-    const TagValueListSPtr m_taglist;
+    int HAS_POSITION;
+    bool USETRAIL;
 };
+
+//Contract makeContract(const IBString &symbol, const IBString &type, const IBString exchange, const IBString &currency);
+//
+// TODO: add more conditions for options/futures later
+inline bool operator==(const Contract &contract1, const Contract &contract2) {
+    return (contract1.symbol==contract2.symbol)&&(contract1.secType==contract2.secType)&&(contract1.exchange==contract2.exchange)&&(contract1.currency==contract2.currency);
+}
 
 #endif
 

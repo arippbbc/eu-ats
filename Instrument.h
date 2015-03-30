@@ -9,25 +9,31 @@
 
 using namespace std;
 
+inline bool operator==(const Contract &lhs, const Contract &rhs){
+    return lhs.symbol == rhs.symbol
+        && lhs.secType == rhs.secType
+        && lhs.currency == rhs.currency
+        && lhs.expiry == rhs.expiry
+        && lhs.strike == rhs.strike;
+}
+
+inline bool operator!=(const Contract &lhs, const Contract &rhs){
+    return !(lhs == rhs);
+}
+
 class Instrument{
     public:
-        Instrument();
-        virtual ~Instrument();
+        Instrument(const Contract &_c):c(_c){};
+        bool inline operator==(const Instrument &inst) const { return (*this).c==inst.c; }
+        bool inline operator!=(const Instrument &inst) const { return !((*this).c==inst.c); }
     private:
-        void subscribeAlgo(const AlgoBase &algo);
-        void unsubscribeAlgo(const AlgoBase &algo);
+        void subscribeAlgo(const AlgoPtr &algo);
+        void unsubscribeAlgo(const AlgoPtr &algo);
     private:
         Contract c;
-        vector<AlgoBase> subscribedAlgos;
+        vector<AlgoPtr> subscribedAlgos;
 };
 
-Contract makeForex(const string &sym){
-    Contract fx;
-    fx.symbol = sym.substr(0,3);
-    fx.secType = "CASH";
-    fx.currency = sym.substr(4,3);
-    fx.exchange = "IDEALPRO";
-    return fx;
-}
+Contract makeForex(const string &sym);
 
 #endif
