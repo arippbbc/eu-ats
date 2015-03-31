@@ -122,6 +122,7 @@ Client::Client(int clientId)
 	, m_orderId(0)
     , m_clientId(clientId)
     , m_taglist(new vector<TagValueSPtr>())
+    , reqHistoricalDataId(1000)
     //, m_data(new HistoricalData())
 {
 }

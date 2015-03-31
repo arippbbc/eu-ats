@@ -36,9 +36,10 @@ DataCenter::DataCenter(shared_ptr<Client> _client):d_client(_client){
         auto endDateTime = getCurrentTime();
         auto barSize = barSizes[M5];
         auto duration = "1 D";
-        const int formatDate = 1;
-    //const TagValueListSPtr chartOption = m_taglist;
-    //m_pClient->reqHistoricalData(reqHistoricalDataId, contract, endDateTime, duration, barSize, whatToShow, useRTH, formatDate, chartOption);
+        IBString whatToShow = "BID";
+        int useRTH = 1;
+        int formatDate = 1;
+        d_client->m_pClient->reqHistoricalData(d_client->getreqHistoricalDataId(), c, endDateTime, duration, barSize, whatToShow, useRTH, formatDate, d_client->getTagList());
     }
     
 }

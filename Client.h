@@ -132,6 +132,12 @@ void tickPrice(TickerId tickerId, TickType field, double price, int canAutoExecu
     void demo();
     void initialCheck();
     inline std::vector<Instrument> getsubscribedInst() {return subscribedInst;}
+    TagValueListSPtr getTagList(){
+        return m_taglist;
+    }
+    int getreqHistoricalDataId(){
+        return reqHistoricalDataId++;
+    }
 
 private:
     std::shared_ptr<EPosixClientSocket> m_pClient;
@@ -147,6 +153,7 @@ private:
     //Contract m_contract;
 	OrderId m_orderId;
     const TagValueListSPtr m_taglist;
+    int reqHistoricalDataId;
 };
 
 #endif
