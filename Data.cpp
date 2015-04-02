@@ -34,12 +34,14 @@ DataCenter::DataCenter(shared_ptr<Client> _client):d_client(_client){
     for(auto in = Instruments.begin(), end = Instruments.end(); in!=end; ++ in){
         auto c = in->getContract();
         auto endDateTime = getCurrentTime();
-        auto barSize = barSizes[M5];
-        auto duration = "1 D";
+        endDateTime = endDateTime.substr(0, 4) + endDateTime.substr(5,2) + endDateTime.substr(8,11);
         IBString whatToShow = "BID";
         int useRTH = 1;
         int formatDate = 1;
-        d_client->m_pClient->reqHistoricalData(d_client->getreqHistoricalDataId(), c, endDateTime, duration, barSize, whatToShow, useRTH, formatDate, d_client->getTagList());
+        for(int i = 0; i < TFSIZE; ++i){
+            auto barSize = barSizeStr[i];
+            auto duration = durationStr[i]; 
+            d_client->reqHistoricalData(d_client->getreqHistoricalDataId(), c, endDateTime, duration, barSize, whatToShow, useRTH, formatDate);
+        }
     }
-    
 }

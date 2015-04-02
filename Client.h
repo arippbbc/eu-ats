@@ -7,6 +7,8 @@
 #include "Instrument.h"
 #include <memory>
 #include <vector>
+#include "EPosixClientSocket.h"
+#include "EPosixClientSocketPlatform.h"
 
 //using namespace std;
 class Instrument;
@@ -128,9 +130,16 @@ void tickPrice(TickerId tickerId, TickType field, double price, int canAutoExecu
 	void displayGroupList( int reqId, const IBString& groups);
 	void displayGroupUpdated( int reqId, const IBString& contractInfo);
 
+    // public function
     void test();
     void demo();
     void initialCheck();
+
+    // forward some function for EPosixClient
+    void reqHistoricalData(TickerId id, const Contract &contract,
+	   const IBString &endDateTime, const IBString &durationStr, const IBString &barSizeSetting,
+	   const IBString &whatToShow, int useRTH, int formatDate);
+
     inline std::vector<Instrument> getsubscribedInst() {return subscribedInst;}
     TagValueListSPtr getTagList(){
         return m_taglist;

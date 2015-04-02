@@ -87,16 +87,15 @@ int main(int argc, char** argv)
         client->subscribeInstrument(makeForex("AUDUSD")); 
         client->connect(host, port);
 
+        //sleep(5);
         DataCenter dataCenter(client);
         // 2014-02-23 wait until cash farm data feed is ready
         //while(!client.iscfReady()){}
         //while(!client->isConnected()){}
         //this_thread::sleep_for(chrono::seconds(1));
-        // 2014-02-26 Tested, this is in seconds
-        //sleep(30);
 
-        while(client->isConnected()){
-            sleep(1);
+        while(client->isConnected()) {
+            client->processMessages();
         }
 
         // 2014-02-09 how to use checkMessage() every second? 

@@ -72,6 +72,8 @@ const int fast=28, slow=80;
 Order s_order_parent, s_order_stoploss, s_order_profittaking, s_order_trailing;
 Order l_order_parent, l_order_stoploss, l_order_profittaking, l_order_trailing;
 
+const Contract audusd = makeForex("AUDUSD");
+
 inline string getCurrentTime(){
     timeval curTime;
     gettimeofday(&curTime, NULL);
@@ -716,7 +718,7 @@ void Client::historicalData(TickerId reqId, const IBString& date, double open, d
 									  double low, double close, int volume, int barCount, double WAP, int hasGaps) {
     //if(date.find("finished")==string::npos)
     //m_data->update(date, open, high, low, close, volume);
-    //printf("historicalData: reqId=%d, %s|%f|%f|%f|%f|%d|%d|%f|%d\n", reqId, date.c_str(), open, high, low, close, volume, barCount, WAP, hasGaps);
+    printf("historicalData: reqId=%d, %s|%f|%f|%f|%f|%d|%d|%f|%d\n", reqId, date.c_str(), open, high, low, close, volume, barCount, WAP, hasGaps);
 }
 
 void Client::scannerParameters(const IBString &xml) {}
@@ -768,3 +770,11 @@ void Client::verifyMessageAPI( const IBString& apiData) {
 void Client::verifyCompleted( bool isSuccessful, const IBString& errorText) {}
 void Client::displayGroupList( int reqId, const IBString& groups) {}
 void Client::displayGroupUpdated( int reqId, const IBString& contractInfo) {}
+
+
+void Client::reqHistoricalData(TickerId id, const Contract &contract,
+	   const IBString &endDateTime, const IBString &durationStr, const IBString &barSizeSetting,
+	   const IBString &whatToShow, int useRTH, int formatDate){
+    m_pClient->reqHistoricalData(id, contract, endDateTime, durationStr, barSizeSetting, whatToShow, useRTH, formatDate, m_taglist);
+}
+
