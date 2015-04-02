@@ -84,15 +84,14 @@ int main(int argc, char** argv)
         printf("Attempt %u of %u\n", attempt, MAX_ATTEMPTS);
 
         shared_ptr<Client> client(new Client(clientId)); 
-        client->subscribeInstrument(makeForex("AUDUSD")); 
         client->connect(host, port);
 
-        //sleep(5);
-        DataCenter dataCenter(client);
+        sleep(1);
         // 2014-02-23 wait until cash farm data feed is ready
         //while(!client.iscfReady()){}
         //while(!client->isConnected()){}
         //this_thread::sleep_for(chrono::seconds(1));
+        client->test();
 
         while(client->isConnected()) {
             client->processMessages();

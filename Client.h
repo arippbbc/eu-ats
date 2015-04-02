@@ -9,9 +9,11 @@
 #include <vector>
 #include "EPosixClientSocket.h"
 #include "EPosixClientSocketPlatform.h"
+#include "Data.h"
 
 //using namespace std;
 class Instrument;
+class DataCenter;
 
 extern int NUM_OF_TICKS;
 extern double trail;
@@ -140,17 +142,16 @@ void tickPrice(TickerId tickerId, TickType field, double price, int canAutoExecu
 	   const IBString &endDateTime, const IBString &durationStr, const IBString &barSizeSetting,
 	   const IBString &whatToShow, int useRTH, int formatDate);
 
-    inline std::vector<Instrument> getsubscribedInst() {return subscribedInst;}
-    TagValueListSPtr getTagList(){
-        return m_taglist;
-    }
-    int getreqHistoricalDataId(){
-        return reqHistoricalDataId++;
-    }
+    inline std::vector<Instrument> getsubscribedInst() {return m_subscribedInst;}
+
+    //int getreqHistoricalDataId(){
+    //    return reqHistoricalDataId++;
+    //}
 
 private:
     std::shared_ptr<EPosixClientSocket> m_pClient;
-    std::vector<Instrument> subscribedInst;
+    std::vector<Instrument> m_subscribedInst;
+    std::shared_ptr<DataCenter> m_dataCenter;
     //DataCenter dCenter;
     int m_clientId;
 	State m_state;
@@ -162,7 +163,8 @@ private:
     //Contract m_contract;
 	OrderId m_orderId;
     const TagValueListSPtr m_taglist;
-    int reqHistoricalDataId;
+    // FIXME possible ID handling class
+    int m_reqHistoricalDataId;
 };
 
 #endif

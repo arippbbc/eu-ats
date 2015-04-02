@@ -50,9 +50,8 @@ class DataCenter{
         typedef shared_ptr<Data> dataPtr;
         typedef unordered_map<IBString, unordered_map<IBString, dataPtr> >  HdataMap;
         vector<HdataMap> DCenter;
-        shared_ptr<Client> d_client;
     public:
-        DataCenter(shared_ptr<Client>);
+        //DataCenter();
         //~DataCenter(){};
 };
 

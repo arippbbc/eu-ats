@@ -24,7 +24,9 @@ inline bool operator!=(const Contract &lhs, const Contract &rhs){
 class Instrument{
     public:
         Instrument(const Contract &_c):c(_c){};
+        const Contract getContract() const { return c;}
         Contract getContract() { return c;}
+        // FIXME
         bool inline operator==(const Instrument &inst) const { return (*this).c==inst.c; }
         bool inline operator!=(const Instrument &inst) const { return !((*this).c==inst.c); }
     private:
@@ -36,5 +38,7 @@ class Instrument{
 };
 
 Contract makeForex(const string &sym);
+
+double halfpip(double price);
 
 #endif

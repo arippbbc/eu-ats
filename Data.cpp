@@ -27,21 +27,3 @@ void HistoricalData::update(const IBString& date, double open, double high, doub
     hisData.push_back({date, open, high, low, close, volume});
     printf("historicalData: %s|%f|%f|%f|%f|%d\n", date.c_str(), open, high, low, close, volume);
 }
-
-DataCenter::DataCenter(shared_ptr<Client> _client):d_client(_client){
-    //cout << d_client->getsubscribedInst().size() << endl;
-    auto Instruments = d_client->getsubscribedInst();
-    for(auto in = Instruments.begin(), end = Instruments.end(); in!=end; ++ in){
-        auto c = in->getContract();
-        auto endDateTime = getCurrentTime();
-        endDateTime = endDateTime.substr(0, 4) + endDateTime.substr(5,2) + endDateTime.substr(8,11);
-        IBString whatToShow = "BID";
-        int useRTH = 1;
-        int formatDate = 1;
-        for(int i = 0; i < TFSIZE; ++i){
-            auto barSize = barSizeStr[i];
-            auto duration = durationStr[i]; 
-            d_client->reqHistoricalData(d_client->getreqHistoricalDataId(), c, endDateTime, duration, barSize, whatToShow, useRTH, formatDate);
-        }
-    }
-}

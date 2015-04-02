@@ -19,6 +19,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <memory>
+#include <chrono>
 //#include <windows.h>
 
 using namespace std;
@@ -74,6 +75,7 @@ Order l_order_parent, l_order_stoploss, l_order_profittaking, l_order_trailing;
 
 const Contract audusd = makeForex("AUDUSD");
 
+/*  
 inline string getCurrentTime(){
     timeval curTime;
     gettimeofday(&curTime, NULL);
@@ -87,34 +89,22 @@ inline string getCurrentTime(){
     sprintf(currentTime2, "%s.%06Lu", buffer, micro); 
     return string(currentTime2);
 }
+*/
 
-double halfpip(double price){
-    int lastdigit = int(price*100000)%10;
-    switch(lastdigit){
-        case 0:
-        case 5:
-            return price;
-        case 1:
-        case 2:
-            return price-lastdigit/100000.;
-        case 3:
-        case 4:
-        case 6:
-        case 7:
-            return price+(5-lastdigit)/100000.;
-        case 8:
-        case 9:
-            return price+(10-lastdigit)/100000.;
-        default:
-            return price;
-    }
+inline string getCurrentTime(){
+    auto cur = std::chrono::system_clock::now();
+    auto curTime = std::chrono::system_clock::to_time_t(cur);
+    char buffer [20];
+    //localtime is not thread safe
+    strftime(buffer, 20, "%Y-%m-%d %H:%M:%S", localtime(&curTime));
+    return string(buffer);
 }
 
 // member funcs
 Client::Client(int clientId)
-    //Client::Client()
 	: m_pClient(new EPosixClientSocket(this))
-      //, m_clientId(clientId)
+    , m_dataCenter(new DataCenter())
+    , m_clientId(clientId)
 	, m_state(ST_CONNECT)
     //better to set up initial value to be false
     //, m_noposition(false)
@@ -122,9 +112,9 @@ Client::Client(int clientId)
 	, m_sleepDeadline(0)
     //, m_contract(Contract())
 	, m_orderId(0)
-    , m_clientId(clientId)
     , m_taglist(new vector<TagValueSPtr>())
-    , reqHistoricalDataId(1000)
+    // FIXME
+    , m_reqHistoricalDataId(1000)
     //, m_data(new HistoricalData())
 {
 }
@@ -253,10 +243,13 @@ void Client::reqCurrentTime()
 	m_pClient->reqCurrentTime();
 }
 
+// FIXME if const Instrument then getContract must return const
 void Client::subscribeInstrument(const Instrument& inst){
-    auto it=find(subscribedInst.begin(), subscribedInst.end(), inst);
-    if(it==subscribedInst.end()){
-        subscribedInst.push_back(inst);
+    cout << "Current size of instrument list is " << m_subscribedInst.size() << endl;
+    cout << "Current instrument list is " << inst.getContract().symbol << endl;
+    auto it=find(m_subscribedInst.begin(), m_subscribedInst.end(), inst);
+    if(it==m_subscribedInst.end()){
+        m_subscribedInst.push_back(inst);
     }
     else{
         printf("Warning: ignoring an attempt to subscribe already subscribed instrument!\n");
@@ -264,9 +257,9 @@ void Client::subscribeInstrument(const Instrument& inst){
 }
 
 void Client::unsubscribeInstrument(const Instrument& inst){
-    auto it=find(subscribedInst.begin(), subscribedInst.end(), inst);
-    if(it!=subscribedInst.end()){
-        subscribedInst.erase(it);
+    auto it=find(m_subscribedInst.begin(), m_subscribedInst.end(), inst);
+    if(it!=m_subscribedInst.end()){
+        m_subscribedInst.erase(it);
     }
     else{
         printf("Warning: ignoring an attempt to unsubscribe non-existing instrument!\n");
@@ -301,9 +294,30 @@ void Client::orderStatus(OrderId orderId, const IBString &status, int filled,
 }
 
 void Client::test(){
-    cout << subscribedInst.size() << " instruments subscribed!" << endl;
+    //cout << "Current size of instrument list is " << m_subscribedInst.size() << endl;
     Instrument AU(makeForex("AUDUSD"));
     this->subscribeInstrument(AU);
+    
+    Instrument EU(makeForex("EURUSD"));
+    this->subscribeInstrument(EU);
+
+    auto endDateTime = getCurrentTime();
+    endDateTime = endDateTime.substr(0, 4) + endDateTime.substr(5,2) + endDateTime.substr(8,11);
+    cout << endDateTime << endl;
+    // FIXME
+    IBString whatToShow = "BID";
+    int useRTH = 1;
+    int formatDate = 1;
+    for(auto inst = m_subscribedInst.begin(), end = m_subscribedInst.end(); inst!=end; ++ inst){
+        auto contract = inst->getContract();
+        cout << "Symbol: " << contract.symbol << endl;
+        //for(int i = 0; i < TFSIZE; ++i){
+        for(int i = 0; i < M2; ++i){
+            auto barSize = barSizeStr[i];
+            auto duration = durationStr[i]; 
+            m_pClient->reqHistoricalData(m_reqHistoricalDataId++, contract, endDateTime, duration, barSize, whatToShow, useRTH, formatDate, m_taglist);
+        }
+    }
 }
 
 void Client::demo(){
@@ -716,9 +730,14 @@ void Client::managedAccounts( const IBString& accountsList) {}
 void Client::receiveFA(faDataType pFaDataType, const IBString& cxml) {}
 void Client::historicalData(TickerId reqId, const IBString& date, double open, double high,
 									  double low, double close, int volume, int barCount, double WAP, int hasGaps) {
-    //if(date.find("finished")==string::npos)
-    //m_data->update(date, open, high, low, close, volume);
-    printf("historicalData: reqId=%d, %s|%f|%f|%f|%f|%d|%d|%f|%d\n", reqId, date.c_str(), open, high, low, close, volume, barCount, WAP, hasGaps);
+    // FIXME
+    if(date.find("finished")==string::npos)
+        //m_data->update(date, open, high, low, close, volume);
+        ;
+    else
+    // FIXME how to identify historical data request from reqId?
+        cout << "Historical Data for " << reqId << " downloaded!" << endl;
+    //printf("historicalData: reqId=%d, %s|%f|%f|%f|%f|%d|%d|%f|%d\n", reqId, date.c_str(), open, high, low, close, volume, barCount, WAP, hasGaps);
 }
 
 void Client::scannerParameters(const IBString &xml) {}
