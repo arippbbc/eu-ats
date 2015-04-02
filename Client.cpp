@@ -62,7 +62,7 @@ int NUM_OF_TICKS = 200;
 double avgPrice = 0.0;
 
 string clientIdStr = "";
-        
+
 //Contract aud;
 //Contract es;
 //Contract aapl;
@@ -73,21 +73,21 @@ const int fast=28, slow=80;
 Order s_order_parent, s_order_stoploss, s_order_profittaking, s_order_trailing;
 Order l_order_parent, l_order_stoploss, l_order_profittaking, l_order_trailing;
 
-const Contract audusd = makeForex("AUDUSD");
+const Contract audusd = makeContract("FOREX", "AUDUSD");
 
 /*  
-inline string getCurrentTime(){
+    inline string getCurrentTime(){
     timeval curTime;
     gettimeofday(&curTime, NULL);
     unsigned long micro = curTime.tv_usec;
 
     char buffer [20];
-    //localtime is not thread safe
-    strftime(buffer, 20, "%Y-%m-%d %H:%M:%S", localtime((const time_t*)&curTime.tv_sec));
+//localtime is not thread safe
+strftime(buffer, 20, "%Y-%m-%d %H:%M:%S", localtime((const time_t*)&curTime.tv_sec));
 
-    char currentTime2[30];
-    sprintf(currentTime2, "%s.%06Lu", buffer, micro); 
-    return string(currentTime2);
+char currentTime2[30];
+sprintf(currentTime2, "%s.%06Lu", buffer, micro); 
+return string(currentTime2);
 }
 */
 
@@ -101,21 +101,21 @@ inline string getCurrentTime(){
 }
 
 // member funcs
-Client::Client(int clientId)
-	: m_pClient(new EPosixClientSocket(this))
+    Client::Client(int clientId)
+    : m_pClient(new EPosixClientSocket(this))
     , m_dataCenter(new DataCenter())
     , m_clientId(clientId)
-	, m_state(ST_CONNECT)
-    //better to set up initial value to be false
-    //, m_noposition(false)
-    //, m_modified(false)
-	, m_sleepDeadline(0)
-    //, m_contract(Contract())
-	, m_orderId(0)
-    , m_taglist(new vector<TagValueSPtr>())
-    // FIXME
-    , m_reqHistoricalDataId(1000)
-    //, m_data(new HistoricalData())
+      , m_state(ST_CONNECT)
+      //better to set up initial value to be false
+      //, m_noposition(false)
+      //, m_modified(false)
+      , m_sleepDeadline(0)
+      //, m_contract(Contract())
+    , m_orderId(0)
+      , m_taglist(new vector<TagValueSPtr>())
+      // FIXME
+      , m_reqId(1000)
+      //, m_data(new HistoricalData())
 {
 }
 
@@ -125,24 +125,24 @@ Client::~Client()
 
 bool Client::connect(const char *host, unsigned int port)
 {
-	// trying to connect
-	printf( "Connecting to %s:%d clientId:%d\n", !( host && *host) ? "127.0.0.1" : host, port, m_clientId);
+    // trying to connect
+    printf( "Connecting to %s:%d clientId:%d\n", !( host && *host) ? "127.0.0.1" : host, port, m_clientId);
 
-	bool bRes = m_pClient->eConnect( host, port, m_clientId);
+    bool bRes = m_pClient->eConnect( host, port, m_clientId);
 
-	if (bRes) {
-		printf( "Connected to %s:%d clientId:%d\n", !( host && *host) ? "127.0.0.1" : host, port, m_clientId);
-	}
-	else
-		printf( "Cannot connect to %s:%d clientId:%d\n", !( host && *host) ? "127.0.0.1" : host, port, m_clientId);
+    if (bRes) {
+        printf( "Connected to %s:%d clientId:%d\n", !( host && *host) ? "127.0.0.1" : host, port, m_clientId);
+    }
+    else
+        printf( "Cannot connect to %s:%d clientId:%d\n", !( host && *host) ? "127.0.0.1" : host, port, m_clientId);
 
     //2014-02-09 start to read portfolio and account summary here?
-	return bRes;
+    return bRes;
 }
 
 void Client::disconnect() const
 {
-	m_pClient->eDisconnect();
+    m_pClient->eDisconnect();
 
     if(audf){
         fclose(audf);
@@ -151,96 +151,96 @@ void Client::disconnect() const
     if(log_connect.is_open()){
         log_connect.close();
     }
-	printf ( "Disconnected\n");
+    printf ( "Disconnected\n");
 }
 
 bool Client::isConnected() const
 {
-	return m_pClient->isConnected();
+    return m_pClient->isConnected();
 }
 
 void Client::processMessages()
 {
-	fd_set readSet, writeSet, errorSet;
+    fd_set readSet, writeSet, errorSet;
 
-	struct timeval tval;
-	tval.tv_usec = 0;
-	tval.tv_sec = 0;
+    struct timeval tval;
+    tval.tv_usec = 0;
+    tval.tv_sec = 0;
 
-	time_t now = time(NULL);
+    time_t now = time(NULL);
 
-	switch (m_state) {
+    switch (m_state) {
         case ST_CHECK:
             initialCheck();
             break;
-	}
+    }
 
-	if( m_sleepDeadline > 0) {
-		// initialize timeout with m_sleepDeadline - now
-		tval.tv_sec = m_sleepDeadline - now;
-	}
+    if( m_sleepDeadline > 0) {
+        // initialize timeout with m_sleepDeadline - now
+        tval.tv_sec = m_sleepDeadline - now;
+    }
 
-	if( m_pClient->fd() >= 0 ) {
+    if( m_pClient->fd() >= 0 ) {
 
-		FD_ZERO( &readSet);
-		errorSet = writeSet = readSet;
+        FD_ZERO( &readSet);
+        errorSet = writeSet = readSet;
 
-		FD_SET( m_pClient->fd(), &readSet);
+        FD_SET( m_pClient->fd(), &readSet);
 
-		if( !m_pClient->isOutBufferEmpty())
-			FD_SET( m_pClient->fd(), &writeSet);
+        if( !m_pClient->isOutBufferEmpty())
+            FD_SET( m_pClient->fd(), &writeSet);
 
-		FD_CLR( m_pClient->fd(), &errorSet);
+        FD_CLR( m_pClient->fd(), &errorSet);
 
-		int ret = select( m_pClient->fd() + 1, &readSet, &writeSet, &errorSet, &tval);
+        int ret = select( m_pClient->fd() + 1, &readSet, &writeSet, &errorSet, &tval);
 
-		if( ret == 0) { // timeout
-			return;
-		}
+        if( ret == 0) { // timeout
+            return;
+        }
 
-		if( ret < 0) {	// error
-			disconnect();
+        if( ret < 0) {	// error
+            disconnect();
             // potential double free
             if(audf) audf = NULL;
-			return;
-		}
+            return;
+        }
 
-		if( m_pClient->fd() < 0)
-			return;
+        if( m_pClient->fd() < 0)
+            return;
 
-		if( FD_ISSET( m_pClient->fd(), &errorSet)) {
-			// error on socket
-			m_pClient->onError();
-		}
+        if( FD_ISSET( m_pClient->fd(), &errorSet)) {
+            // error on socket
+            m_pClient->onError();
+        }
 
-		if( m_pClient->fd() < 0)
-			return;
+        if( m_pClient->fd() < 0)
+            return;
 
-		if( FD_ISSET( m_pClient->fd(), &writeSet)) {
-			// socket is ready for writing
-			m_pClient->onSend();
-		}
+        if( FD_ISSET( m_pClient->fd(), &writeSet)) {
+            // socket is ready for writing
+            m_pClient->onSend();
+        }
 
-		if( m_pClient->fd() < 0)
-			return;
+        if( m_pClient->fd() < 0)
+            return;
 
-		if( FD_ISSET( m_pClient->fd(), &readSet)) {
-			// socket is ready for reading
-			m_pClient->onReceive();
-		}
-	}
+        if( FD_ISSET( m_pClient->fd(), &readSet)) {
+            // socket is ready for reading
+            m_pClient->onReceive();
+        }
+    }
 }
 
 void Client::reqCurrentTime()
 {
     //printf("Requesting Current Time\n");
 
-	// set ping deadline to "now + n seconds"
+    // set ping deadline to "now + n seconds"
     //m_sleepDeadline = time( NULL) + PING_DEADLINE;
 
     //m_state = ST_PING_ACK;
 
-	m_pClient->reqCurrentTime();
+    m_pClient->reqCurrentTime();
 }
 
 // FIXME if const Instrument then getContract must return const
@@ -268,26 +268,26 @@ void Client::unsubscribeInstrument(const Instrument& inst){
 
 
 /*  
-void Client::placeOrder()
-{
+    void Client::placeOrder()
+    {
     return;
-}
+    }
 
-void Client::cancelOrder()
-{
-	printf("Client %d: Cancelling Order %ld\n", m_clientId, m_orderId);
+    void Client::cancelOrder()
+    {
+    printf("Client %d: Cancelling Order %ld\n", m_clientId, m_orderId);
 
-	m_state = ST_CANCELORDER_ACK;
+    m_state = ST_CANCELORDER_ACK;
 
-	m_pClient->cancelOrder(m_orderId);
+    m_pClient->cancelOrder(m_orderId);
     printf("Client %d: cancel order function called!", m_clientId);
-}
-*/
+    }
+    */
 
 // possible duplicate messages
 void Client::orderStatus(OrderId orderId, const IBString &status, int filled,
-	   int remaining, double avgFillPrice, int permId, int parentId,
-	   double lastFillPrice, int clientId, const IBString& whyHeld)
+        int remaining, double avgFillPrice, int permId, int parentId,
+        double lastFillPrice, int clientId, const IBString& whyHeld)
 
 {
     printf("Order: id=%ld, parentId=%d, status=%s, filled price=%.5f, average filled price=%.5f\n", orderId, parentId, status.c_str(), lastFillPrice, avgFillPrice);
@@ -295,10 +295,10 @@ void Client::orderStatus(OrderId orderId, const IBString &status, int filled,
 
 void Client::test(){
     //cout << "Current size of instrument list is " << m_subscribedInst.size() << endl;
-    Instrument AU(makeForex("AUDUSD"));
+    Instrument AU("FOREX", "AUDUSD");
     this->subscribeInstrument(AU);
-    
-    Instrument EU(makeForex("EURUSD"));
+
+    Instrument EU("FOREX", "EURUSD");
     this->subscribeInstrument(EU);
 
     auto endDateTime = getCurrentTime();
@@ -312,16 +312,23 @@ void Client::test(){
         auto contract = inst->getContract();
         cout << "Symbol: " << contract.symbol << endl;
         //for(int i = 0; i < TFSIZE; ++i){
-        for(int i = 0; i < M2; ++i){
+        for(int i = M1; i < M1+1; ++i){
             auto barSize = barSizeStr[i];
             auto duration = durationStr[i]; 
-            m_pClient->reqHistoricalData(m_reqHistoricalDataId++, contract, endDateTime, duration, barSize, whatToShow, useRTH, formatDate, m_taglist);
+            // FIXME instrument alone is not enough to identify request ID
+            m_reqHDPool.insert({m_reqId, inst->getInstrumentID()});
+            m_pClient->reqHistoricalData(m_reqId++, contract, endDateTime, duration, barSize, whatToShow, useRTH, formatDate, m_taglist);
+            m_reqHDPool.insert({m_reqId, inst->getInstrumentID()});
+
+            // FIXME
+            auto reqMktDepthLevel = 2;
+            m_pClient->reqMktDepth(m_reqId, contract, reqMktDepthLevel, m_taglist);
         }
     }
 }
 
 void Client::demo(){
-    const Contract contract = makeForex("AUDUSD");
+    const Contract contract = makeContract("FOREX", "AUDUSD");
     //m_pClient->isConnected();
     //m_pClient->checkMessages();
 
@@ -356,7 +363,7 @@ void Client::demo(){
     //int reqExecutionsId = 100;
     //const ExecutionFilter filter;
     //m_pClient->reqExecutions(reqExecutionsId, filter);
-    
+
     //const int reqContractDetailsId = 200;
     //m_pClient->reqContractDetails(reqContractDetailsId, contract);
 
@@ -399,7 +406,7 @@ void Client::demo(){
 void Client::nextValidId(OrderId orderId)
 {
     //printf("update next valid order id: %d\n", orderId);
-	m_orderId = orderId;
+    m_orderId = orderId;
 }
 
 //string Client::fromLongtoTime(long time){
@@ -422,25 +429,25 @@ void Client::error(const int id, const int errorCode, const IBString errorString
     if(id==-1 && (errorCode==2104 || errorCode==2106)) return;
     printf("Error: id=%d, errorCode=%d, msg=%s\n", id, errorCode, errorString.c_str());
     /*
-    if( id == -1 && errorCode == 1100){ //if "Connectivity between IB and TWS has been lost"
-        disconnect();
-        time_t t;
-        t = time(NULL);
-        strftime(curTime, sizeof curTime, "%Y%m%d %H:%M:%S", localtime(&t));
-        log_connect << curTime << "|disconnected\n";
-    }
+       if( id == -1 && errorCode == 1100){ //if "Connectivity between IB and TWS has been lost"
+       disconnect();
+       time_t t;
+       t = time(NULL);
+       strftime(curTime, sizeof curTime, "%Y%m%d %H:%M:%S", localtime(&t));
+       log_connect << curTime << "|disconnected\n";
+       }
 
-    if( id == -1 && errorCode == 1102){ //if "Connectivity between IB and TWS has been lost"
-        time_t t;
-        t = time(NULL);
-        strftime(curTime, sizeof curTime, "%Y%m%d %H:%M:%S", localtime(&t));
-        log_connect << curTime << "|reconnected\n";
-    }
+       if( id == -1 && errorCode == 1102){ //if "Connectivity between IB and TWS has been lost"
+       time_t t;
+       t = time(NULL);
+       strftime(curTime, sizeof curTime, "%Y%m%d %H:%M:%S", localtime(&t));
+       log_connect << curTime << "|reconnected\n";
+       }
 
     //printf("are we stopped out or profit taken, %d, %d\n", id, m_clientId);
     if(id == m_orderId-1 || id == m_orderId-2){
-        HAS_POSITION=false;
-        //printf("stopped out or profit taken\n");
+    HAS_POSITION=false;
+    //printf("stopped out or profit taken\n");
     }
     */
 }
@@ -454,8 +461,8 @@ void Client::tickSize( TickerId tickerId, TickType field, int size) {
 }
 
 void Client::tickOptionComputation( TickerId tickerId, TickType tickType, double impliedVol, double delta,
-											 double optPrice, double pvDividend,
-											 double gamma, double vega, double theta, double undPrice) {}
+        double optPrice, double pvDividend,
+        double gamma, double vega, double theta, double undPrice) {}
 
 void Client::tickGeneric(TickerId tickerId, TickType tickType, double value) {
     //printf("tickGeneric: %d|%d|%f\n", tickerId, tickType, value);
@@ -466,7 +473,7 @@ void Client::tickString(TickerId tickerId, TickType tickType, const IBString& va
 }
 
 void Client::tickEFP(TickerId tickerId, TickType tickType, double basisPoints, const IBString& formattedBasisPoints,
-							   double totalDividends, int holdDays, const IBString& futureExpiry, double dividendImpact, double dividendsToExpiry) {}
+        double totalDividends, int holdDays, const IBString& futureExpiry, double dividendImpact, double dividendsToExpiry) {}
 void Client::openOrder(OrderId orderId, const Contract &contract, const Order &order, const OrderState& ostate) {
     //printf("OpenOrder: orderId=%d, contract=%s, order=%s, ostate=%s\n", orderId, contract.info(),
     //order.info(), ostate.info());
@@ -484,15 +491,15 @@ void Client::winError( const IBString &str, int lastError) {
 void Client::connectionClosed() {}
 
 void Client::updateAccountValue(const IBString& key, const IBString& val,
-										  const IBString& currency, const IBString& accountName) {
+        const IBString& currency, const IBString& accountName) {
     printf("updateAccountValue: key=%s, val=%s, currency=%s, accountName=%s\n", key.c_str(), val.c_str(), currency.c_str(), accountName.c_str());
 }
 
 void Client::updatePortfolio(const Contract& contract, int position,
-		double marketPrice, double marketValue, double averageCost,
-		double unrealizedPNL, double realizedPNL, const IBString& accountName){
+        double marketPrice, double marketValue, double averageCost,
+        double unrealizedPNL, double realizedPNL, const IBString& accountName){
     //printf("updatePortfolio: contract=%s, position=%s, marketPrice=%f, marketValue=%f, averageCost=%f, unrealizedPNL=%f, realizedPNL=%f, accountName=%s\n", 
-            //contract.info().c_str(), position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName.c_str());
+    //contract.info().c_str(), position, marketPrice, marketValue, averageCost, unrealizedPNL, realizedPNL, accountName.c_str());
 }
 
 void Client::updateAccountTime(const IBString& timeStamp) {
@@ -526,200 +533,16 @@ void Client::execDetailsEnd( int reqId) {
 // for bid/ask it's always update
 // side 0 = ask, 1 = bid
 void Client::updateMktDepth(TickerId id, int position, int operation, int side,
-									  double price, int size) {
-   
-
-    //char currentTime2[30] = "";
-    printf("updateMktDepth: position %d, operation %d, side %d, price %.5f, %d size\n", position, operation, side, price, size);
-    //if(position==0 && side==0)
-    //printf("%.5f|%d\n", price, size);
-    //printf("%s|%.5f|%d\n", getCurrentTime().c_str(), price, size);
-    //printf("%s|%.5f|%d|%d|%d|%d\n", currentTime2, price, size, position, operation, side);
-
-    /*
-    if(!side){
-        ask = price;
-    }
-
-    if(side){
-        bid = price;
-    }
-
-    if(ask>epsilon && bid>epsilon){
-        mid=(ask+bid)/2.;
-    }
-    if(mid>epsilon){
-        //fprintf(audf, "%s,%.6f\n", currentTime2 ,mid);
-        //printf("%s:\t%.6f\n", currentTime2 ,mid);
-        printf("%.6f\n", mid);
-
-        if(cnt==0){
-            xopen.push_back(mid);
-            h=mid; l=mid;
-            ++cnt;
-        }
-
-        else if(cnt<NUM_OF_TICKS-1) {
-            if(h<mid) h=mid;
-            if(l>mid) l=mid;
-            ++cnt;
-        }
-        
-        //else (cnt==NUM_OF_TICKS){
-        else {
-            high.push_back(h);
-            low.push_back(l);
-            last.push_back(mid);
-            cnt=0;
-            printf("OHLC:%.6f|%.6f|%.6f|%.6f|%d\n", xopen.back(), high.back(), low.back(), last.back(), last.size());
-            unsigned sz = last.size();
-
-            if(sz >= fast){
-                if(sz == fast){
-                    emafast.push_back(accumulate(last.begin(), last.end(), 0.0)/fast);
-                    //printf("EMA fast: %.6f\t%d\n", emafast.back(), emafast.size());
-                }
-                else{
-                    emafast.push_back(emafast.back() + (2.0/(fast+1.))*(last.back()-emafast.back()));
-                    //printf("EMA fast: %.6f\t%d\n", emafast.back(), emafast.size());
-                }
-            }
-
-            if(sz >= slow){
-                if(sz == slow){
-                    emaslow.push_back(accumulate(last.begin(), last.end(), 0.0)/slow);
-                    //printf("EMA slow: %.6f\t%d\n", emaslow.back(), emaslow.size());
-                }
-                else{
-                    emaslow.push_back(emaslow.back() + (2.0/(slow+1.))*(last.back()-emaslow.back()));
-                    //printf("EMA slow: %.6f\t%d\n", emaslow.back(), emaslow.size());
-                }
-            }
-
-            // this part is the strategy
-            if(emaslow.size()>2 && emafast.size()>2){
-                if(emafast[emafast.size()-2] <= emaslow[emaslow.size()-2] && emafast[emafast.size()-1] > emaslow[emaslow.size()-1]){
-                    GOLONG = true;
-                    GOSHORT = false;
-                }
-                if(emafast[emafast.size()-2] >= emaslow[emaslow.size()-2] && emafast[emafast.size()-1] < emaslow[emaslow.size()-1]){
-                    GOSHORT = true;
-                    GOLONG = false;
-                }
-            }
-        }
-    }
-
-    if(!HAS_POSITION){
-        double s_sp, l_sp;
-        stringstream oca;
-        OrderId parentId;
-
-        if(xopen.size()>=NUM_OF_BARS){
-            s_order_parent.totalQuantity = totalQuantity;
-            s_order_parent.orderRef = "from client " + clientIdStr;
-            s_order_parent.action = "SELL";
-            s_order_stoploss.action = "BUY";
-            s_order_profittaking.action = "BUY";
-            s_order_trailing.action = "BUY";
-
-            s_order_parent.orderType = "LMT";
-            s_order_parent.lmtPrice = halfpip(bid-2*tick);
-            //cout << "short order limit price : " << s_order_parent.lmtPrice << endl;
-            s_order_stoploss.auxPrice = s_order_parent.lmtPrice + sl;
-            s_order_profittaking.lmtPrice = s_order_parent.lmtPrice - tp;
-            s_order_trailing.auxPrice = trail;
-
-            s_order_stoploss.orderType = "STP";
-            s_order_profittaking.orderType = "LMT";
-            s_order_trailing.orderType = "TRAIL";
-            s_order_stoploss.totalQuantity = s_order_parent.totalQuantity;
-            s_order_profittaking.totalQuantity =  s_order_parent.totalQuantity;
-            s_order_trailing.totalQuantity = s_order_parent.totalQuantity;
-
-            s_order_parent.transmit = USETRAIL?true:false;
-            s_order_parent.transmit = false;
-            s_order_stoploss.transmit = false;
-            //s_order_profittaking.transmit = false;
-
-            l_order_parent.totalQuantity = totalQuantity;
-            l_order_parent.orderRef = "from client " + clientIdStr;
-            l_order_parent.action = "BUY";
-            l_order_stoploss.action = "SELL";
-            l_order_profittaking.action = "SELL";
-            l_order_trailing.action = "SELL";
-            
-            l_order_parent.orderType = "LMT";
-            l_order_parent.lmtPrice = halfpip(ask+2*tick);
-            //cout << "long order limit price : " << l_order_parent.lmtPrice << endl;
-            l_order_stoploss.auxPrice = l_order_parent.lmtPrice - sl;
-            l_order_profittaking.lmtPrice = l_order_parent.lmtPrice + tp;
-            l_order_trailing.auxPrice = trail;
-
-            l_order_stoploss.orderType = "STP";
-            l_order_profittaking.orderType = "LMT";
-            l_order_trailing.orderType = "TRAIL";
-            l_order_stoploss.totalQuantity = l_order_parent.totalQuantity;
-            l_order_profittaking.totalQuantity =  l_order_parent.totalQuantity;
-            s_order_trailing.totalQuantity = l_order_parent.totalQuantity;
-            
-            l_order_parent.transmit = USETRAIL?true:false;
-            l_order_parent.transmit = false;
-            l_order_stoploss.transmit = false;
-            //l_order_profittaking.transmit = false;
-            parentId = m_orderId;
-
-            if(GOLONG){
-                l_order_stoploss.parentId = parentId;
-                l_order_profittaking.parentId = parentId;
-                l_order_trailing.parentId = parentId;
-                cout << "Client " << m_clientId << ": Placing a LMT long order, orderId " << parentId << ".\n";
-                m_pClient->placeOrder(parentId, m_contract, l_order_parent);	
-                // 2014-02-23 unkonw bug
-                if(!USETRAIL){
-                    m_pClient->placeOrder(parentId + 1, m_contract, l_order_stoploss);
-                    m_pClient->placeOrder(parentId + 2, m_contract, l_order_profittaking);
-                }
-                else {
-                    m_pClient->placeOrder(parentId + 1, m_contract, l_order_trailing);
-                }
-                GOLONG = false;
-                HAS_POSITION = 1;
-                m_modified = false;
-                m_orderId = parentId + (USETRAIL?2:3);
-                //m_orderId = parentId + 3;
-                cout << "Client " << m_clientId << ": New orderId is " << m_orderId << ".\n";
-            }
-            
-            if(GOSHORT){
-                s_order_stoploss.parentId = parentId;
-                s_order_profittaking.parentId = parentId;
-                s_order_trailing.parentId = parentId;
-                
-                cout << "Client " << m_clientId << ": Placing a LMT short order, orderId " << parentId << ".\n";
-                m_pClient->placeOrder(parentId, m_contract, s_order_parent);	
-                if(!USETRAIL){
-                    m_pClient->placeOrder(parentId + 1, m_contract, s_order_stoploss);
-                    m_pClient->placeOrder(parentId + 2, m_contract, s_order_profittaking);
-                }
-                else{
-                    m_pClient->placeOrder(parentId + 1, m_contract, s_order_trailing);
-                }
-                GOSHORT = false;
-                HAS_POSITION = -1;
-                m_modified = false;
-                m_orderId = parentId + (USETRAIL?2:3);
-                //m_orderId = parentId + 3;
-                cout << "Client " << m_clientId << ": New orderId is " << m_orderId << ".\n";
-            }
-        } 
-    }
-        */
+        double price, int size) {
+    //printf("updateMktDepth: position %d, operation %d, side %d, price %.5f, %d size\n", position, operation, side, price, size);
+    // FIXME I am not sure if message of tick data comes in the right order
+    auto instId = m_reqHDPool[id];
+    m_dataCenter->TDCenter[instId]->update(side, price, size);
 }
 
 void Client::updateMktDepthL2(TickerId id, int position, IBString marketMaker, int operation,
-										int side, double price, int size) {
-    printf("updateMktDepth2: position %d, marketMaker %s, operation %d, side %d, price %.5f, %d size\n", position, marketMaker.c_str(), operation, side, price, size);
+        int side, double price, int size) {
+    //printf("updateMktDepth2: position %d, marketMaker %s, operation %d, side %d, price %.5f, %d size\n", position, marketMaker.c_str(), operation, side, price, size);
 }
 
 void Client::updateNewsBulletin(int msgId, int msgType, const IBString& newsMessage, const IBString& originExch) {
@@ -729,24 +552,25 @@ void Client::updateNewsBulletin(int msgId, int msgType, const IBString& newsMess
 void Client::managedAccounts( const IBString& accountsList) {}
 void Client::receiveFA(faDataType pFaDataType, const IBString& cxml) {}
 void Client::historicalData(TickerId reqId, const IBString& date, double open, double high,
-									  double low, double close, int volume, int barCount, double WAP, int hasGaps) {
-    // FIXME
-    if(date.find("finished")==string::npos)
-        //m_data->update(date, open, high, low, close, volume);
-        ;
-    else
+        double low, double close, int volume, int barCount, double WAP, int hasGaps) {
     // FIXME how to identify historical data request from reqId?
+    if(date.find("finished")==string::npos){
+        auto instId = m_reqHDPool[reqId];
+        OHLC d{date, open, high, low, close, volume};
+        m_dataCenter->HDCenter[instId]->update(d);
+    }
+    else
         cout << "Historical Data for " << reqId << " downloaded!" << endl;
     //printf("historicalData: reqId=%d, %s|%f|%f|%f|%f|%d|%d|%f|%d\n", reqId, date.c_str(), open, high, low, close, volume, barCount, WAP, hasGaps);
 }
 
 void Client::scannerParameters(const IBString &xml) {}
 void Client::scannerData(int reqId, int rank, const ContractDetails &contractDetails,
-	   const IBString &distance, const IBString &benchmark, const IBString &projection,
-	   const IBString &legsStr) {}
+        const IBString &distance, const IBString &benchmark, const IBString &projection,
+        const IBString &legsStr) {}
 void Client::scannerDataEnd(int reqId) {}
 void Client::realtimeBar(TickerId reqId, long time, double open, double high, double low, double close,
-								   long volume, double wap, int count) {
+        long volume, double wap, int count) {
 
     printf("realtimeBar: reqId=%d, %ld|%f|%f|%f|%f|%ld|%f|%d\n", reqId, time, open, high, low, close, volume, wap, count);
 }
@@ -792,8 +616,8 @@ void Client::displayGroupUpdated( int reqId, const IBString& contractInfo) {}
 
 
 void Client::reqHistoricalData(TickerId id, const Contract &contract,
-	   const IBString &endDateTime, const IBString &durationStr, const IBString &barSizeSetting,
-	   const IBString &whatToShow, int useRTH, int formatDate){
+        const IBString &endDateTime, const IBString &durationStr, const IBString &barSizeSetting,
+        const IBString &whatToShow, int useRTH, int formatDate){
     m_pClient->reqHistoricalData(id, contract, endDateTime, durationStr, barSizeSetting, whatToShow, useRTH, formatDate, m_taglist);
 }
 

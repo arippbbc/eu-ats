@@ -6,8 +6,11 @@
 #include "Algo.h"
 #include <memory>
 #include <vector>
+#include <string>
 
 using namespace std;
+
+Contract makeContract(const string &type, const string &id);
 
 inline bool operator==(const Contract &lhs, const Contract &rhs){
     return lhs.symbol == rhs.symbol
@@ -23,9 +26,10 @@ inline bool operator!=(const Contract &lhs, const Contract &rhs){
 
 class Instrument{
     public:
-        Instrument(const Contract &_c):c(_c){};
+        Instrument(const string &type, const string &id):c(makeContract(type, id)), instId(id){}
         const Contract getContract() const { return c;}
         Contract getContract() { return c;}
+        const string getInstrumentID() const { return instId;}
         // FIXME
         bool inline operator==(const Instrument &inst) const { return (*this).c==inst.c; }
         bool inline operator!=(const Instrument &inst) const { return !((*this).c==inst.c); }
@@ -34,10 +38,9 @@ class Instrument{
         void unsubscribeAlgo(const AlgoPtr &algo);
     private:
         Contract c;
+        string instId;
         vector<AlgoPtr> subscribedAlgos;
 };
-
-Contract makeForex(const string &sym);
 
 double halfpip(double price);
 

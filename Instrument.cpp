@@ -26,13 +26,15 @@ void Instrument::unsubscribeAlgo(const AlgoPtr &algo){
     }
 }
 
-Contract makeForex(const string &sym){
-    Contract fx;
-    fx.symbol = sym.substr(0,3);
-    fx.secType = "CASH";
-    fx.currency = sym.substr(3,3);
-    fx.exchange = "IDEALPRO";
-    return fx;
+Contract makeContract(const string &type, const string &id){
+    if(type == "FOREX"){
+        Contract fx;
+        fx.symbol = id.substr(0,3);
+        fx.secType = "CASH";
+        fx.currency = id.substr(3,3);
+        fx.exchange = "IDEALPRO";
+        return fx;
+    }
 }
 
 double halfpip(double price){
@@ -56,4 +58,3 @@ double halfpip(double price){
             return price;
     }
 }
-
