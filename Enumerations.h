@@ -8,7 +8,7 @@
  highest resolution under track
 */
 enum TIMEFRAME{
-    S1,
+    S1=0,
     S5,
     S15,
     S30,
@@ -28,7 +28,7 @@ static const IBString barSizeStr[TFSIZE] = {
     ,"5 secs"
     ,"15 secs"
     ,"30 secs"
-    "1 min"
+    ,"1 min"
     ,"2 mins"
     ,"3 mins"
     ,"5 mins"

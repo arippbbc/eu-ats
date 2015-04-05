@@ -17,7 +17,8 @@ struct DataPoint{
     virtual ~DataPoint();
 };
 
-struct OHLC: public DataPoint
+//struct OHLC: public DataPoint
+struct OHLC
 {
     IBString date;
 	double open, high, low, close;
@@ -29,7 +30,8 @@ struct OHLC: public DataPoint
 
 // FIXME
 // this is a better design, so realtime spread is tracable
-struct L2: public DataPoint{
+//struct L2: public DataPoint{
+struct L2{
     IBString date;
     double bid;
     double ask;
@@ -40,8 +42,8 @@ struct L2: public DataPoint{
 class Data{
     public:
         //virtual void update();
-        virtual void update(const OHLC &d) = 0;
-        virtual void update(int side, double price, int size) = 0;
+        virtual void update(string date, double open, double high, double low, double close, int volume) {};
+        virtual void update(int side, double price, int size) {};
         virtual ~Data(){};
     private:
         //shared_ptr<Client> d_client;
@@ -52,12 +54,12 @@ class Data{
 class HistoricalData: public Data{
     public:
         // ignore barCount, WAP, hasGaps
-        virtual void update(const OHLC &d);
+        virtual void update(string date, double open, double high, double low, double close, int volume);
         //virtual ~HistoricalData(){};
     private:
         deque<OHLC> histData;
         // FIXME, is there enough memory to keep all historical data? hard coded window for now
-        static const unsigned len = 5000;
+        //static const unsigned len = 5000;
 };
 
 class TickData: public Data{
@@ -86,9 +88,10 @@ class DataCenter{
         typedef unordered_map<IBString, dataPtr> TdataMap;
         HdataMap HDCenter;
         TdataMap TDCenter;
+
     public:
-        HdataMap getHistData() {return HDCenter;} 
-        TdataMap getTickData() {return TDCenter;} 
+        HdataMap& getHistData() {return HDCenter;} 
+        TdataMap& getTickData() {return TDCenter;} 
         //DataCenter();
         //~DataCenter(){};
 };

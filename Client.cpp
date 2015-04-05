@@ -16,10 +16,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
-#include <time.h>
-#include <sys/time.h>
+//#include <time.h>
+//#include <sys/time.h>
 #include <memory>
-#include <chrono>
+#include "Timer.h"
 //#include <windows.h>
 
 using namespace std;
@@ -74,31 +74,6 @@ Order s_order_parent, s_order_stoploss, s_order_profittaking, s_order_trailing;
 Order l_order_parent, l_order_stoploss, l_order_profittaking, l_order_trailing;
 
 const Contract audusd = makeContract("FOREX", "AUDUSD");
-
-/*  
-    inline string getCurrentTime(){
-    timeval curTime;
-    gettimeofday(&curTime, NULL);
-    unsigned long micro = curTime.tv_usec;
-
-    char buffer [20];
-//localtime is not thread safe
-strftime(buffer, 20, "%Y-%m-%d %H:%M:%S", localtime((const time_t*)&curTime.tv_sec));
-
-char currentTime2[30];
-sprintf(currentTime2, "%s.%06Lu", buffer, micro); 
-return string(currentTime2);
-}
-*/
-
-inline string getCurrentTime(){
-    auto cur = std::chrono::system_clock::now();
-    auto curTime = std::chrono::system_clock::to_time_t(cur);
-    char buffer [20];
-    //localtime is not thread safe
-    strftime(buffer, 20, "%Y-%m-%d %H:%M:%S", localtime(&curTime));
-    return string(buffer);
-}
 
 // member funcs
     Client::Client(int clientId)
@@ -245,8 +220,8 @@ void Client::reqCurrentTime()
 
 // FIXME if const Instrument then getContract must return const
 void Client::subscribeInstrument(const Instrument& inst){
-    cout << "Current size of instrument list is " << m_subscribedInst.size() << endl;
-    cout << "Current instrument list is " << inst.getContract().symbol << endl;
+    //cout << "Current size of instrument list is " << m_subscribedInst.size() << endl;
+    //cout << "Current instrument list is " << inst.getContract().symbol << endl;
     auto it=find(m_subscribedInst.begin(), m_subscribedInst.end(), inst);
     if(it==m_subscribedInst.end()){
         m_subscribedInst.push_back(inst);
@@ -298,8 +273,8 @@ void Client::test(){
     Instrument AU("FOREX", "AUDUSD");
     this->subscribeInstrument(AU);
 
-    Instrument EU("FOREX", "EURUSD");
-    this->subscribeInstrument(EU);
+    //Instrument EU("FOREX", "EURUSD");
+    //this->subscribeInstrument(EU);
 
     auto endDateTime = getCurrentTime();
     endDateTime = endDateTime.substr(0, 4) + endDateTime.substr(5,2) + endDateTime.substr(8,11);
@@ -310,7 +285,6 @@ void Client::test(){
     int formatDate = 1;
     for(auto inst = m_subscribedInst.begin(), end = m_subscribedInst.end(); inst!=end; ++ inst){
         auto contract = inst->getContract();
-        cout << "Symbol: " << contract.symbol << endl;
         //for(int i = 0; i < TFSIZE; ++i){
         for(int i = M1; i < M1+1; ++i){
             auto barSize = barSizeStr[i];
@@ -318,11 +292,11 @@ void Client::test(){
             // FIXME instrument alone is not enough to identify request ID
             m_reqHDPool.insert({m_reqId, inst->getInstrumentID()});
             m_pClient->reqHistoricalData(m_reqId++, contract, endDateTime, duration, barSize, whatToShow, useRTH, formatDate, m_taglist);
-            m_reqHDPool.insert({m_reqId, inst->getInstrumentID()});
+            //m_reqTDPool.insert({m_reqId, inst->getInstrumentID()});
 
             // FIXME
-            auto reqMktDepthLevel = 2;
-            m_pClient->reqMktDepth(m_reqId, contract, reqMktDepthLevel, m_taglist);
+            //auto reqMktDepthLevel = 2;
+            //m_pClient->reqMktDepth(m_reqId++, contract, reqMktDepthLevel, m_taglist);
         }
     }
 }
@@ -426,7 +400,11 @@ void Client::currentTime(long xtime)
 
 void Client::error(const int id, const int errorCode, const IBString errorString)
 {
-    if(id==-1 && (errorCode==2104 || errorCode==2106)) return;
+    if(id==-1 && (
+                errorCode==2104 
+                || errorCode==2106
+                || errorCode==2108
+                || errorString=="Market data farm connection is inactive but should be available upon demand.usfuture.us")) return;
     printf("Error: id=%d, errorCode=%d, msg=%s\n", id, errorCode, errorString.c_str());
     /*
        if( id == -1 && errorCode == 1100){ //if "Connectivity between IB and TWS has been lost"
@@ -536,8 +514,13 @@ void Client::updateMktDepth(TickerId id, int position, int operation, int side,
         double price, int size) {
     //printf("updateMktDepth: position %d, operation %d, side %d, price %.5f, %d size\n", position, operation, side, price, size);
     // FIXME I am not sure if message of tick data comes in the right order
-    auto instId = m_reqHDPool[id];
-    m_dataCenter->TDCenter[instId]->update(side, price, size);
+    auto instId = m_reqTDPool[id];
+    // FIXME: auto seems to make a copy 
+    auto x = m_dataCenter->getTickData();
+    if(m_dataCenter->getTickData().find(instId)==m_dataCenter->getTickData().end()){ 
+        m_dataCenter->getTickData().insert(make_pair(instId, shared_ptr<Data>(new TickData())));
+    }
+    m_dataCenter->getTickData()[instId]->update(side, price, size);
 }
 
 void Client::updateMktDepthL2(TickerId id, int position, IBString marketMaker, int operation,
@@ -556,8 +539,10 @@ void Client::historicalData(TickerId reqId, const IBString& date, double open, d
     // FIXME how to identify historical data request from reqId?
     if(date.find("finished")==string::npos){
         auto instId = m_reqHDPool[reqId];
-        OHLC d{date, open, high, low, close, volume};
-        m_dataCenter->HDCenter[instId]->update(d);
+        if(m_dataCenter->getHistData().find(instId)==m_dataCenter->getHistData().end()){ 
+            m_dataCenter->getHistData().insert(make_pair(instId, shared_ptr<Data>(new HistoricalData())));
+        }
+        m_dataCenter->HDCenter[instId]->update(date, open, high, low, close, volume);
     }
     else
         cout << "Historical Data for " << reqId << " downloaded!" << endl;
